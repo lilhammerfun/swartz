@@ -1,0 +1,40 @@
+{
+  "name": "tukdam",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "desktop": "node scripts/desktop.mjs",
+    "format": "prettier --write src scripts vite.config.ts",
+    "check:fixtures": "node scripts/check-fixtures.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5",
+    "@fontsource/jetbrains-mono": "^5",
+    "@tauri-apps/api": "^2",
+    "class-variance-authority": "^0.7",
+    "clsx": "^2",
+    "iconoir-react": "^7",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "shadow-plugin": "^2",
+    "tailwind-merge": "^3",
+    "tailwindcss": "^4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^22",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^6.0.2",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0"
+}

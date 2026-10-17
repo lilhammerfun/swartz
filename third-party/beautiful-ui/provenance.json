@@ -1,0 +1,31 @@
+{
+  "repository": "https://github.com/slev12397/beautiful-ui",
+  "commit": "44a274e598395ab61e7c96c26fda2758780253b7",
+  "copied": [
+    "components/atoms/Button",
+    "components/atoms/SegmentedControl",
+    "components/atoms/Shimmer",
+    "components/atoms/StatusPill",
+    "components/primitives/ApprovalCard",
+    "components/primitives/ChatComposer",
+    "components/primitives/CodeBlock",
+    "components/primitives/GlideMenu",
+    "components/primitives/PromptBar",
+    "components/primitives/SelectionActions",
+    "components/primitives/SidebarNav",
+    "components/primitives/StreamingText",
+    "components/primitives/ThinkingState",
+    "app/globals.css (active foundation)",
+    "lib/utils.ts"
+  ],
+  "adaptations": [
+    "Iconoir replaces the paid icon set; official shadcn Zinc owns light/dark colors",
+    "Retain active product primitives; remove standalone demo content and inactive gallery modes",
+    "SidebarNav is controlled, project-grouped and collapses to one aligned 52px rail",
+    "ChatComposer renders controlled history with stable source-message IDs",
+    "PromptBar is a controlled multi-line composer with a model picker and book entry",
+    "SelectionActions binds the reader native selection to immutable quote snapshots",
+    "ApprovalCard requires explicit submission and only appears after a practice request",
+    "Preserve licenses and source attribution"
+  ]
+}
