@@ -1,14 +1,16 @@
 # Tukdam
 
-通过与 AI 交流，逐渐构建一本属于自己的学习之书。
+English · [简体中文](README.zh-CN.md)
 
-Tukdam 关注解释、例子背后的知识组织：概念如何分类，知识如何分层，以及它们之间有什么联系。阅读与提问相互推动，让学习成果逐渐形成可以回读、持续完善的体系。
+Build your own learning book through conversations with AI.
 
-目前处于早期开发阶段，已支持阅读、原文提问和书内讨论，自动组织与修订书稿仍在探索中。
+Tukdam explores how knowledge fits together: how concepts are grouped, how foundations support new ideas, and how those ideas connect. Reading and conversation help shape a coherent body of knowledge you can revisit and refine.
 
-## 本地运行
+This project is in early development. Reading, passage-based questions, and book discussions are available; automatic book organization and revision are still being explored.
 
-需要 Node.js 24+、Rust stable 和 [Tauri 平台依赖](https://tauri.app/start/prerequisites/)。
+## Run locally
+
+Requires Node.js 24+, Rust stable, and the [Tauri platform dependencies](https://tauri.app/start/prerequisites/).
 
 ```sh
 git clone https://github.com/lilhammerfun/tukdam.git
@@ -17,8 +19,8 @@ npm ci
 npm run desktop
 ```
 
-浏览器预览使用 `npm run dev`。AI 交流需在 Settings 中连接自己的模型服务。
+For a browser preview, run `npm run dev`. Connect your own model service in Settings to use AI conversations.
 
-## 许可证
+## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE)。第三方组件与字体的许可证见 [third-party](third-party/)。
+[PolyForm Noncommercial 1.0.0](LICENSE). Third-party component and font licenses are listed in [third-party](third-party/).
