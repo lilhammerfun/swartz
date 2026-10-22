@@ -1,0 +1,18 @@
+{
+  "source": "https://github.com/shadcn-ui/ui",
+  "registry": "https://ui.shadcn.com/r/styles/radix-nova",
+  "installer": "shadcn@4.22.1",
+  "date": "2026-10-22",
+  "license": "MIT",
+  "configuration": "components.json",
+  "additionalComponents": ["attachment", "bubble", "popover"],
+  "localAdaptations": [
+    "Rust-only highlighter language registry",
+    "Sidebar labels wrap with left alignment",
+    "Local copy of CLI Tailwind utilities",
+    "ScrollArea exposes viewport ref and events for existing paragraph navigation",
+    "SidebarProvider accepts a responsive breakpoint so the existing Sheet can preserve reading width",
+    "InputGroup disabled styling follows the input control instead of an empty submit button",
+    "Prompt Input follows the official demo composition; Attachment installed from the same radix-nova registry; addon padding focuses the textarea"
+  ]
+}

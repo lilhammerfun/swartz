@@ -14,14 +14,15 @@
       {
         "title": "Tukdam",
         "width": 1440,
-        "height": 940,
+        "height": 980,
         "minWidth": 1000,
-        "minHeight": 700,
-        "decorations": false
+        "minHeight": 720,
+        "decorations": false,
+        "backgroundColor": "#ffffff"
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost blob: data:; font-src 'self'; connect-src ipc: http://ipc.localhost"
     }
   },
   "bundle": {

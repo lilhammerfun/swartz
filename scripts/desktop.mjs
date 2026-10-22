@@ -12,7 +12,10 @@ try {
   const page = await fetch("http://127.0.0.1:1420", {
     signal: AbortSignal.timeout(1000),
   });
-  if (page.ok && (await page.text()).includes("<title>Tukdam</title>")) {
+  if (
+    page.ok &&
+    (await page.text()).includes('name="tukdam-client" content="book-reader"')
+  ) {
     args.push(
       "--config",
       JSON.stringify({ build: { beforeDevCommand: null } }),
