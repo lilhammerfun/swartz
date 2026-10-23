@@ -6,8 +6,6 @@
 
 **[阅读我们的信念 →](https://lilhammerfun.github.io/swartz-site/)**
 
-网站完整保留了对 Aaron Swartz 的纪念、两段宣言引文，以及从最初的 [Codeberg Swartz 项目](https://codeberg.org/lilhammerfun/swartz)延续而来的愿景。
-
 ## 本地运行
 
 需要 Node.js 24+、Rust stable 和 [Tauri 平台依赖](https://tauri.app/start/prerequisites/)。

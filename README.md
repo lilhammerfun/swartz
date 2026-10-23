@@ -6,8 +6,6 @@ A public-benefit project for understanding and sharing knowledge: turning questi
 
 **[Read our conviction →](https://lilhammerfun.github.io/swartz-site/en/)**
 
-The website preserves the complete tribute to Aaron Swartz, both manifesto quotations, and the vision inherited from the original [Swartz project on Codeberg](https://codeberg.org/lilhammerfun/swartz).
-
 ## Run locally
 
 Requires Node.js 24+, Rust stable, and the [Tauri platform dependencies](https://tauri.app/start/prerequisites/).

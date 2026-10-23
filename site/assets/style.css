@@ -56,8 +56,7 @@ a:focus-visible {
   margin-inline: auto;
 }
 .masthead,
-.portrait figcaption,
-.footer {
+.portrait figcaption {
   font-family:
     ui-sans-serif,
     system-ui,
@@ -180,27 +179,6 @@ h1 {
 #vision .prose blockquote {
   margin-block: 28px;
 }
-.footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  padding-block: 25px 40px;
-  border-top: 1px solid #e6e6e6;
-  font-size: 10px;
-  line-height: 1.8;
-  color: #777;
-}
-.footer p {
-  margin: 0;
-}
-.footer > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 22px;
-}
-.footer a {
-  text-decoration: none;
-}
 .skip-link {
   position: absolute;
   left: 16px;
@@ -258,13 +236,5 @@ h1 {
   }
   .prose blockquote {
     padding-left: 17px;
-  }
-  .footer {
-    display: block;
-    padding-block: 22px 30px;
-  }
-  .footer > div {
-    margin-top: 10px;
-    gap: 16px;
   }
 }
