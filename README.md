@@ -32,7 +32,7 @@ I want to build an open network where anyone can publish what they know, organiz
 
 Swartz was right. This is early, and I'd rather try than not. If you feel the same way, come build it together.
 
-This codebase grew out of Tukdam, a personal learning project, and continues the vision of my earlier [Swartz project on Codeberg](https://codeberg.org/lilhammerfun/swartz): turning questions and exploration into a book of your own, and letting what one person learns become a path someone else can follow.
+This codebase continues the vision of my earlier [Swartz project on Codeberg](https://codeberg.org/lilhammerfun/swartz): turning questions and exploration into a book of your own, and letting what one person learns become a path someone else can follow.
 
 This is a public-benefit project. Published knowledge should be free to read and obtain. Recognition should come from explaining things well, sharing useful work, and helping correct mistakes. Money should not decide whose explanation is seen or whose judgement counts.
 
