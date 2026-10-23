@@ -16,7 +16,7 @@
     "desktop": "node scripts/desktop.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --experimental-strip-types --test src/features/annotations/annotation-store.test.ts src/features/reader/markdown-annotations.test.ts src/features/model/model-api.test.ts src/features/library/library-store.test.ts src/features/chat/chat-store.test.ts src/features/home/recent-learning.test.ts"
+    "test": "node --experimental-strip-types --test src/features/annotations/annotation-store.test.ts src/features/reader/markdown-annotations.test.ts src/features/model/model-api.test.ts src/features/library/library-store.test.ts src/features/chat/chat-store.test.ts src/features/home/recent-learning.test.ts src/mock-data/preview-sessions.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",

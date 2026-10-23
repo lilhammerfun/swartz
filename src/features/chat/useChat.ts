@@ -9,6 +9,8 @@ import { askModel } from "../model/model-service";
 import type { ModelRequestOptions } from "../model/model-api";
 import { ordinaryChatMessages } from "./chat-messages";
 import { importAnnotationSessions } from "./session-passages";
+import { cleanupEmptyPreviewSessions } from "../../mock-data/preview-sessions";
+import { seedOrganizeConversation } from "../../mock-data/organize-conversation";
 import {
   CHAT_STORAGE_KEY,
   emptyChat,
@@ -57,6 +59,10 @@ export function useChat() {
     try {
       acceptSnapshot(readChat(localStorage));
       importAnnotationSessions(localStorage);
+      if (import.meta.env.DEV) {
+        cleanupEmptyPreviewSessions(localStorage);
+        seedOrganizeConversation(localStorage);
+      }
       acceptSnapshot(recoverChat(localStorage));
     } catch (cause) {
       setError(errorMessage(cause));
