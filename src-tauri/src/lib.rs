@@ -9,5 +9,5 @@ pub fn run() {
             model::ask_model
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Tukdam");
+        .expect("error while running Swartz");
 }

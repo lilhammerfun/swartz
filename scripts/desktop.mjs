@@ -14,7 +14,7 @@ try {
   });
   if (
     page.ok &&
-    (await page.text()).includes('name="tukdam-client" content="book-reader"')
+    (await page.text()).includes('name="swartz-client" content="book-reader"')
   ) {
     args.push(
       "--config",
