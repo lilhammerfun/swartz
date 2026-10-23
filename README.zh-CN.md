@@ -4,7 +4,9 @@
 
 一个关于理解与分享知识的公益项目：把疑问与探索慢慢变成一本自己的书。
 
-**[阅读我们的信念 →](https://lilhammerfun.github.io/swartz-site/)**
+> **WIP：** Swartz 正在开发中，尚未发布稳定版本。
+
+**[阅读我们的信念 →](https://lilhammerfun.github.io/swartz/)**
 
 ## 本地运行
 

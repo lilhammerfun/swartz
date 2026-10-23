@@ -4,7 +4,9 @@ English · [简体中文](README.zh-CN.md)
 
 A public-benefit project for understanding and sharing knowledge: turning questions and exploration into a book of your own.
 
-**[Read our conviction →](https://lilhammerfun.github.io/swartz-site/en/)**
+> **WIP:** Swartz is under active development. No stable release is available yet.
+
+**[Read our conviction →](https://lilhammerfun.github.io/swartz/en/)**
 
 ## Run locally
 
