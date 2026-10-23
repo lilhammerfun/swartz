@@ -5,11 +5,11 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  MessageSquare,
   MessagesSquare,
   Maximize2,
   Minus,
   Plus,
+  PanelRight,
   X,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -31,8 +31,18 @@ import { NewBookDialog } from "@/features/library/NewBookDialog";
 import { useLibrary } from "@/features/library/useLibrary";
 import { EmptyBook } from "@/features/reader/EmptyBook";
 import { HomePage } from "@/features/home/HomePage";
-import { FloatingConversation } from "@/features/chat/FloatingConversation";
+import { ReaderSplit } from "@/features/reader/ReaderSplit";
+import { SessionPanel } from "@/features/chat/SessionPanel";
+import { useSessionPanel } from "@/features/chat/useSessionPanel";
+import { sessionPassages } from "@/features/chat/session-passages";
+import type { ChatSession } from "@/features/chat/chat-store";
 import { useChat } from "@/features/chat/useChat";
+import { useBookIntegrations } from "@/features/chat/useBookIntegrations";
+import { UndoToasts, type UndoNotice } from "@/components/ui/undo-toast";
+import {
+  sessionIsSynthesized,
+  visibleMessages,
+} from "@/features/chat/book-integration";
 import {
   loadRecentLearning,
   recordRecentLearning,
@@ -41,10 +51,6 @@ import {
   type RecentLearningEntry,
 } from "@/features/home/recent-learning";
 import { SidebarReopenButton } from "./SidebarReopenButton";
-import type {
-  QuestionComposer,
-  DiscussionDraft,
-} from "@/features/annotations/AnnotationPane";
 import type { AnnotationSelection } from "@/features/annotations/annotation-selection";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import {
@@ -56,29 +62,19 @@ import {
 import {
   loadModelSettings,
   saveModelSettings,
-  askModel,
 } from "@/features/model/model-service";
 import {
   promptChoices,
   type PromptSubmission,
 } from "@/features/annotations/prompt-options";
-import { learningMessages } from "@/features/model/learning-messages";
-import { useAnnotations } from "@/features/annotations/useAnnotations";
-import { readingAnnotations } from "@/features/annotations/reading-annotations";
 import { initialLocation, learningBook as starterBook } from "@/mock-data/book";
 import type {
   Annotation,
   AnnotationAnchor,
   ReaderLocation,
   LearningBook,
-  PromptAttachment,
 } from "@/types/book";
 
-const AnnotationPane = lazy(() =>
-  import("@/features/annotations/AnnotationPane").then((module) => ({
-    default: module.AnnotationPane,
-  })),
-);
 const ChatPage = lazy(() =>
   import("@/features/chat/ChatPage").then((module) => ({
     default: module.ChatPage,
@@ -104,42 +100,36 @@ function loadRecent() {
 }
 
 export default function App() {
-  const library = useLibrary(starterBook);
-  const notes = useAnnotations();
-  const chat = useChat();
-  const [floatingConversation, setFloatingConversation] = useState<
-    string | null
-  >(null);
-  const [conversationOpen, setConversationOpen] = useState(false);
+  const storedLibrary = useLibrary(starterBook);
+  const integrations = useBookIntegrations();
+  const library = {
+    ...storedLibrary,
+    books: storedLibrary.books.map(integrations.project),
+  };
+  const storedChat = useChat();
+  const chat = {
+    ...storedChat,
+    sessions: storedChat.sessions.filter(
+      (session) => !sessionIsSynthesized(session, integrations.entries),
+    ),
+    getSession: (id: string) => {
+      const session = storedChat.getSession(id);
+      return session && !sessionIsSynthesized(session, integrations.entries)
+        ? session
+        : undefined;
+    },
+  };
   const [recent, setRecent] = useState(loadRecent);
   const [location, setLocation] = useState<ReaderLocation>({ scale: "home" });
-  const [annotationsOpen, setAnnotationsOpen] = useState(
-    notes.annotations.length > 0,
-  );
-  const [composer, setComposer] = useState<QuestionComposer | null>(null);
-  const [draft, setDraft] = useState("");
-  const [questionAttachments, setQuestionAttachments] = useState<
-    PromptAttachment[]
-  >([]);
-  const [discussionDrafts, setDiscussionDrafts] = useState<
-    Record<string, DiscussionDraft>
-  >({});
-  const annotationScrollPositions = useRef(new Map<string, number>());
-  const [annotationSelection, setAnnotationSelection] =
-    useState<AnnotationSelection | null>(null);
-  const [previewAnnotation, setPreviewAnnotation] = useState<string | null>(
+  const [newBookOpen, setNewBookOpen] = useState(false);
+  const [undoNotices, setUndoNotices] = useState<UndoNotice[]>([]);
+  const [sessionPanelWidth, setSessionPanelWidth] = useState<number>();
+  const [sessionToolbar, setSessionToolbar] = useState<HTMLDivElement | null>(
     null,
   );
-  const [newBookOpen, setNewBookOpen] = useState(false);
   const [modelSettings, setModelSettings] =
     useState<ModelSettings>(defaultModelSettings);
   const [modelLoadError, setModelLoadError] = useState("");
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const busy = useRef(false);
-  const [requestError, setRequestError] = useState<{
-    id: string;
-    message: string;
-  } | null>(null);
   const configured = modelIsConfigured(modelSettings);
   const locationRef = useRef(location);
   useEffect(() => {
@@ -182,10 +172,6 @@ export default function App() {
     }
   }, [location]);
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
-  const activeAnnotationRef = useRef(activeAnnotation);
-  useEffect(() => {
-    activeAnnotationRef.current = activeAnnotation;
-  }, [activeAnnotation]);
   const [annotationFocusRequest, setAnnotationFocusRequest] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -197,19 +183,16 @@ export default function App() {
     location.scale === "section" || location.scale === "book"
       ? location
       : readingLocation.current;
-  const chatSession =
+  const routeChatSession =
     location.scale === "chat"
       ? chat.getSession(location.conversationId)
-      : (location.scale === "book" || location.scale === "section") &&
-          conversationOpen
-        ? chat.getSession(floatingConversation ?? "")
-        : undefined;
+      : undefined;
   const book =
     library.books.find(
       (item) =>
         item.id ===
         (location.scale === "chat"
-          ? chatSession?.bookId
+          ? routeChatSession?.bookId
           : "bookId" in currentBookLocation
             ? currentBookLocation.bookId
             : undefined),
@@ -223,7 +206,24 @@ export default function App() {
       (s) => location.scale === "section" && s.id === location.sectionId,
     ) ?? chapter?.sections[0];
   const inBook = location.scale === "section" || location.scale === "book";
-  const annotationPaneVisible = location.scale === "section" && annotationsOpen;
+  const panel = useSessionPanel(book.id);
+  const panelVisible = inBook && panel.open;
+  const chatSession =
+    location.scale === "chat"
+      ? routeChatSession
+      : inBook
+        ? chat.getSession(panel.active)
+        : undefined;
+  const notes = sessionPassages(
+    chat.sessions.map((session) => ({
+      ...session,
+      messages: visibleMessages(session, integrations.entries),
+    })),
+  );
+  const [messageFocus, setMessageFocus] = useState<{
+    id: string;
+    request: number;
+  }>();
   const recordedLocation = useRef<ReaderLocation | null>(null);
   useEffect(() => {
     const readingChanged = recordedLocation.current !== location;
@@ -299,11 +299,8 @@ export default function App() {
   const navigate = (next: ReaderLocation) => {
     setHistory((items) => [...items, location]);
     setFuture([]);
-    setConversationOpen(false);
     setLocation(next);
     setActiveAnnotation(null);
-    setAnnotationSelection(null);
-    setPreviewAnnotation(null);
     setSearchOpen(false);
   };
   const openBook = (target: LearningBook) => {
@@ -332,23 +329,13 @@ export default function App() {
         : { scale: "book", bookId: target.id },
     );
   };
-  const openConversation = (open: boolean) => {
-    if (!open) return setConversationOpen(false);
-    const id = chat.startSession(book);
-    if (id) {
-      setFloatingConversation(id);
-      setConversationOpen(true);
-    } else
-      showNotice("The conversation could not be opened. Please try again.");
-  };
   const openSavedConversation = (id: string) => {
     const session = chat.getSession(id);
     if (!session) return;
     const target = library.books.find((item) => item.id === session.bookId);
     if (target) {
       openBook(target);
-      setFloatingConversation(id);
-      setConversationOpen(true);
+      panel.openSession(id, target.id);
     } else navigate({ scale: "chat", conversationId: id });
   };
   const resumeLearning = (id: string) => {
@@ -428,160 +415,66 @@ export default function App() {
       setFuture(source.slice(0, -1));
       setHistory((items) => [...items, location]);
     }
-    setConversationOpen(false);
     setLocation(target);
     setActiveAnnotation(null);
-    setAnnotationSelection(null);
-    setPreviewAnnotation(null);
   };
-  const compose = (anchor: AnnotationAnchor) => {
-    if (busy.current) {
-      showNotice(
-        "Wait for the current AI response before starting another question.",
-      );
-      return;
-    }
-    setRequestError(null);
+  const attachPassage = (sessionId: string, anchor: AnnotationAnchor) => {
+    const session = chat.getSession(sessionId);
     if (
-      composer &&
-      (draft.trim() || questionAttachments.length > 0) &&
-      (composer.anchor.paragraphId !== anchor.paragraphId ||
-        composer.anchor.quote !== anchor.quote)
+      session?.draftPassage &&
+      (session.draftPassage.quote !== anchor.quote ||
+        session.draftPassage.paragraphId !== anchor.paragraphId)
     ) {
-      showNotice("Discard your current question before starting another.");
-      setAnnotationsOpen(true);
-      return;
+      showNotice("Remove the current quoted passage before adding another.");
+      return false;
     }
-    setComposer({ anchor: structuredClone(anchor) });
-    setAnnotationsOpen(true);
-    setActiveAnnotation(null);
-    setAnnotationSelection(null);
-    setPreviewAnnotation(null);
-  };
-  const canBrowseAnnotations = () => {
-    if (
-      composer?.anchor.bookId === book.id &&
-      composer.anchor.sectionId === section?.id
-    ) {
-      if (
-        pendingId === "new" ||
-        draft.trim() ||
-        questionAttachments.length > 0
-      ) {
-        showNotice(
-          "Discard your current question before opening another discussion.",
-        );
-        return false;
-      }
-      setComposer(null);
-    }
+    chat.setDraftPassage(sessionId, anchor);
     return true;
   };
-  const selectAnnotation = (
-    annotation: Annotation,
-    locate = false,
-    keepSelection = false,
-  ) => {
-    if (!canBrowseAnnotations()) return;
-    if (
-      location.scale !== "section" ||
-      location.bookId !== annotation.anchor.bookId ||
-      location.chapterId !== annotation.anchor.chapterId ||
-      location.sectionId !== annotation.anchor.sectionId
-    )
-      setLocation({
-        scale: "section",
-        bookId: annotation.anchor.bookId,
-        chapterId: annotation.anchor.chapterId,
-        sectionId: annotation.anchor.sectionId,
-      });
+  const openPanelSession = (id: string) => {
+    setActiveAnnotation(null);
+    setMessageFocus(undefined);
+    if (panel.pendingPassage && attachPassage(id, panel.pendingPassage))
+      panel.setPendingPassage(undefined);
+    panel.openSession(id);
+  };
+  const newPanelSession = () => {
+    const id = chat.startSession(book, true);
+    if (!id) return;
+    setActiveAnnotation(null);
+    setMessageFocus(undefined);
+    if (panel.pendingPassage) {
+      chat.setDraftPassage(id, panel.pendingPassage);
+      panel.setPendingPassage(undefined);
+    }
+    panel.openSession(id);
+  };
+  const compose = (anchor: AnnotationAnchor) => {
+    panel.setOpen(true);
+    const current = chat.getSession(panel.active);
+    if (current && current.bookId === book.id)
+      attachPassage(current.id, anchor);
+    else {
+      panel.setPendingPassage(anchor);
+      panel.showList();
+    }
+  };
+  const selectAnnotation = (annotation: Annotation) => {
+    const session = chat.sessions.find((session) =>
+      session.messages.some((message) => message.id === annotation.id),
+    );
+    if (!session) return;
+    panel.openSession(session.id);
     setActiveAnnotation(annotation.id);
-    if (!keepSelection) setAnnotationSelection(null);
-    setPreviewAnnotation(null);
-    if (locate) setAnnotationFocusRequest((request) => request + 1);
-    setAnnotationsOpen(true);
+    setMessageFocus((current) => ({
+      id: annotation.id,
+      request: (current?.request ?? 0) + 1,
+    }));
   };
   const selectAnnotations = (selection: AnnotationSelection) => {
-    if (!canBrowseAnnotations()) return;
-    setAnnotationSelection(selection);
+    panel.showList(selection.ids);
     setActiveAnnotation(null);
-    setPreviewAnnotation(null);
-    setAnnotationsOpen(true);
   };
-  const sendQuestion = async (
-    anchor: AnnotationAnchor,
-    question: string,
-    submission: PromptSubmission,
-    discussion?: Annotation,
-  ): Promise<boolean> => {
-    if (busy.current || !question.trim()) return false;
-    if (!configured) {
-      navigate({ scale: "settings" });
-      return false;
-    }
-    const target = discussion?.id ?? "new";
-    busy.current = true;
-    setPendingId(target);
-    setRequestError(null);
-    try {
-      const answer = await askModel(
-        learningMessages(
-          book,
-          anchor,
-          question.trim(),
-          discussion,
-          submission.attachments,
-        ),
-        submission,
-      );
-      let id = discussion?.id;
-      if (id)
-        notes.appendAnsweredExchange(
-          id,
-          question,
-          answer,
-          submission.attachments,
-        );
-      else {
-        id = notes.addAnsweredQuestion(
-          anchor,
-          question,
-          answer,
-          submission.attachments,
-        ).id;
-        setComposer(null);
-        setDraft("");
-        setQuestionAttachments([]);
-      }
-      if (
-        locationRef.current.scale === "section" &&
-        locationRef.current.bookId === anchor.bookId &&
-        locationRef.current.sectionId === anchor.sectionId &&
-        (!discussion || activeAnnotationRef.current === discussion.id)
-      ) {
-        setActiveAnnotation(id);
-      }
-      return true;
-    } catch (error) {
-      setRequestError({
-        id: target,
-        message:
-          error instanceof Error
-            ? error.message
-            : typeof error === "string"
-              ? error
-              : "The model request failed. Your question is still here.",
-      });
-      return false;
-    } finally {
-      busy.current = false;
-      setPendingId(null);
-    }
-  };
-  const visibleAnnotations =
-    location.scale === "section" && section
-      ? readingAnnotations(notes.annotations, book.id, section)
-      : [];
   const query = search.trim().toLowerCase();
   const bookSearchResults = library.books.filter((item) =>
     item.title.toLowerCase().includes(query),
@@ -614,59 +507,122 @@ export default function App() {
       showNotice("The window action could not be completed. Please try again.");
     }
   };
-  const conversationView = chatSession ? (
+  const renderConversation = (session: ChatSession) => (
     <Suspense fallback={null}>
       <ChatPage
-        key={chatSession.id}
+        key={session.id}
         compact={inBook}
-        messages={chatSession.messages}
-        value={chatSession.draft}
-        onChange={(text) => chat.setDraft(chatSession.id, text)}
-        attachments={chatSession.draftAttachments}
+        messages={visibleMessages(session, integrations.entries)}
+        integrationError={integrations.error}
+        targetBooks={
+          session.bookId
+            ? library.books.filter((target) => target.id === session.bookId)
+            : library.books
+        }
+        needsBookChoice={!session.bookId}
+        onOrganize={(bookId) => {
+          const target = library.books.find((item) => item.id === bookId);
+          const current = chat.getSession(session.id);
+          if (!target || !current)
+            throw new Error(
+              "This conversation or book is no longer available.",
+            );
+          const origin = location;
+          const entry = integrations.integrate(current, target);
+          panel.closeSession(session.id);
+          setActiveAnnotation(null);
+          setMessageFocus(undefined);
+          if (origin.scale === "chat") navigate({ scale: "home" });
+          const restore = () => {
+            try {
+              integrations.undo(entry.id);
+              if (session.bookId) panel.openSession(session.id, session.bookId);
+              navigate(origin);
+              return true;
+            } catch {
+              showNotice(
+                "Could not undo. Your conversation is still saved. Try Undo again.",
+              );
+              return false;
+            }
+          };
+          setUndoNotices((current) => [
+            ...current,
+            {
+              id: entry.id,
+              title: "Conversation synthesized",
+              onUndo: restore,
+            },
+          ]);
+          requestAnimationFrame(() =>
+            document
+              .querySelector<HTMLElement>('[aria-label="Session list"]')
+              ?.focus({ preventScroll: true }),
+          );
+        }}
+        sessionId={session.id}
+        scrollPositions={panel.scrollPositions}
+        draftPassage={session.draftPassage}
+        onRemovePassage={() => chat.setDraftPassage(session.id)}
+        focusMessageId={messageFocus?.id}
+        focusRequest={messageFocus?.request}
+        onLocatePassage={(id, anchor) => {
+          if (anchor.bookId !== book.id) return;
+          if (
+            location.scale !== "section" ||
+            location.sectionId !== anchor.sectionId
+          )
+            navigate({
+              scale: "section",
+              bookId: anchor.bookId,
+              chapterId: anchor.chapterId,
+              sectionId: anchor.sectionId,
+            });
+          setActiveAnnotation(id);
+          setAnnotationFocusRequest((request) => request + 1);
+          const workspaceWidth =
+            sessionToolbar?.closest(".reader-workspace")?.clientWidth ??
+            window.innerWidth;
+          if (workspaceWidth <= 720) panel.setOpen(false);
+        }}
+        value={session.draft}
+        onChange={(text) => chat.setDraft(session.id, text)}
+        attachments={session.draftAttachments}
         onAttachmentsChange={(files) =>
-          chat.setDraftAttachments(chatSession.id, files)
+          chat.setDraftAttachments(session.id, files)
         }
         settings={modelSettings}
-        pending={chat.pendingSessionId === chatSession.id}
-        busy={
-          chat.busy ||
-          pendingId !== null ||
-          chatSession.request?.status === "pending"
-        }
-        error={chatSession.request?.error || chat.error || undefined}
+        pending={chat.pendingSessionId === session.id}
+        busy={chat.busy || session.request?.status === "pending"}
+        error={session.request?.error || chat.error || undefined}
         onSettings={() => navigate({ scale: "settings" })}
         onConfigure={() => navigate({ scale: "settings" })}
         onSend={sendOrdinaryQuestion}
         onRetry={
-          chatSession.request && chatSession.request.status !== "pending"
+          session.request && session.request.status !== "pending"
             ? () => {
                 if (!configured) {
                   navigate({ scale: "settings" });
                   return;
                 }
-                void chat.retry(
-                  chatSession.id,
-                  chatSession.bookId ? book : undefined,
-                  {
-                    ...chatSession.request!.options,
-                    model: promptChoices(modelSettings).models.some(
-                      (model) =>
-                        model.id === chatSession.request!.options.model,
-                    )
-                      ? chatSession.request!.options.model
-                      : modelSettings.model,
-                  },
-                );
+                void chat.retry(session.id, session.bookId ? book : undefined, {
+                  ...session.request!.options,
+                  model: promptChoices(modelSettings).models.some(
+                    (model) => model.id === session.request!.options.model,
+                  )
+                    ? session.request!.options.model
+                    : modelSettings.model,
+                });
               }
             : undefined
         }
       />
     </Suspense>
-  ) : null;
+  );
   return (
     <SidebarProvider
       className="desktop-app"
-      mobileBreakpoint={annotationPaneVisible ? 1180 : 768}
+      mobileBreakpoint={panelVisible ? 1180 : 768}
       style={{ "--sidebar-width": "256px" } as React.CSSProperties}
     >
       <LibrarySidebar
@@ -676,12 +632,21 @@ export default function App() {
         onSearch={() => setSearchOpen(true)}
         showContents={location.scale !== "chat" || !!chatSession?.bookId}
       />
-      <SidebarInset className="reader-workspace">
+      <SidebarInset
+        className="reader-workspace"
+        style={
+          {
+            "--session-panel-width": sessionPanelWidth
+              ? `${sessionPanelWidth}px`
+              : undefined,
+          } as React.CSSProperties
+        }
+      >
         <header
           className="app-topbar flex items-center justify-between gap-4"
           data-tauri-drag-region
         >
-          <div className="flex min-w-0 items-center gap-1">
+          <div className="flex min-w-0 flex-1 items-center gap-1">
             <SidebarReopenButton />
             <IconButton
               label="Go back"
@@ -698,7 +663,7 @@ export default function App() {
               <ArrowRight />
             </IconButton>
             {(inBook || chatSession) && (
-              <div className="ml-2 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+              <div className="app-breadcrumb ml-2 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
                 <span className="truncate">
                   {chatSession
                     ? chatSession.bookId
@@ -716,9 +681,15 @@ export default function App() {
             )}
           </div>
           <div
-            className="flex min-w-8 items-center justify-end gap-1"
+            className={`flex min-w-8 items-center justify-end gap-1 ${panelVisible ? "session-toolbar" : ""}`}
             data-tauri-drag-region
           >
+            {panelVisible && (
+              <div
+                ref={setSessionToolbar}
+                className="flex h-full min-w-0 flex-1"
+              />
+            )}
             {location.scale === "library" && (
               <Button
                 variant="outline"
@@ -734,20 +705,22 @@ export default function App() {
                 <BookOpen />
               </IconButton>
             )}
-            {location.scale === "section" && (
+            {inBook && (
               <IconButton
                 label={
-                  annotationsOpen ? "Hide annotations" : "Show annotations"
+                  panelVisible
+                    ? "Collapse session panel"
+                    : "Expand session panel"
                 }
-                aria-pressed={annotationsOpen}
-                variant={annotationsOpen ? "secondary" : "ghost"}
-                aria-controls="annotation-panel"
+                aria-pressed={panelVisible}
+                aria-controls="session-panel"
+                variant={panelVisible ? "secondary" : "ghost"}
                 onClick={() => {
-                  setPreviewAnnotation(null);
-                  setAnnotationsOpen((open) => !open);
+                  panel.setOpen(!panel.open);
+                  if (panel.open) setActiveAnnotation(null);
                 }}
               >
-                <MessageSquare />
+                <PanelRight />
               </IconButton>
             )}
             {isTauri() && (
@@ -788,21 +761,36 @@ export default function App() {
             </AlertDescription>
           </Alert>
         )}
-        {notes.error && (
-          <Alert
-            variant="destructive"
-            className="rounded-none border-x-0 border-t-0"
-          >
-            <AlertDescription className="flex items-center justify-between gap-3">
-              {notes.error}
-              <Button variant="outline" size="sm" onClick={notes.retry}>
-                {notes.errorKind === "save" ? "Retry saving" : "Retry loading"}
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-        <div
-          className={`reading-split ${annotationPaneVisible ? "" : "annotations-closed"}`}
+        <ReaderSplit
+          onPanelWidthChange={setSessionPanelWidth}
+          panel={
+            panelVisible ? (
+              <SessionPanel
+                toolbar={sessionToolbar}
+                state={panel}
+                sessions={chat.sessions
+                  .filter((session) => session.bookId === book.id)
+                  .map((session) => ({
+                    ...session,
+                    messages: visibleMessages(session, integrations.entries),
+                  }))
+                  .sort(
+                    (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+                  )}
+                renderSession={renderConversation}
+                error={chat.error || undefined}
+                onSelect={openPanelSession}
+                onList={() => {
+                  panel.showList();
+                  setActiveAnnotation(null);
+                  setMessageFocus(undefined);
+                }}
+                onCloseTab={panel.closeSession}
+                onNew={newPanelSession}
+                onClearPassage={() => panel.setPendingPassage(undefined)}
+              />
+            ) : null
+          }
         >
           {location.scale === "home" ? (
             <HomePage
@@ -812,7 +800,7 @@ export default function App() {
               onAttachmentsChange={chat.setHomeAttachments}
               settings={modelSettings}
               pending={false}
-              busy={chat.busy || pendingId !== null}
+              busy={chat.busy}
               error={chat.error || recent.error || undefined}
               onSettings={() => navigate({ scale: "settings" })}
               onConfigure={() => navigate({ scale: "settings" })}
@@ -822,7 +810,7 @@ export default function App() {
             />
           ) : location.scale === "chat" ? (
             chatSession ? (
-              conversationView
+              renderConversation(chatSession)
             ) : (
               <section
                 className="p-6 text-sm text-muted-foreground"
@@ -847,15 +835,13 @@ export default function App() {
                 book={book}
                 chapter={chapter}
                 section={section}
-                annotations={notes.annotations}
+                annotations={notes}
                 activeAnnotationId={activeAnnotation}
-                previewAnnotationId={previewAnnotation}
+                previewAnnotationId={null}
                 annotationFocusRequest={annotationFocusRequest}
                 onAskAI={compose}
                 onSelectAnnotation={(id) => {
-                  const annotation = notes.annotations.find(
-                    (item) => item.id === id,
-                  );
+                  const annotation = notes.find((item) => item.id === id);
                   if (annotation) selectAnnotation(annotation);
                 }}
                 onSelectAnnotations={selectAnnotations}
@@ -870,90 +856,16 @@ export default function App() {
               />
             </Suspense>
           )}
-          {location.scale === "section" && (
-            <Suspense fallback={null}>
-              <AnnotationPane
-                annotations={visibleAnnotations}
-                open={annotationPaneVisible}
-                scope={`${book.id}:${section?.id}`}
-                selectedId={activeAnnotation}
-                selection={annotationSelection}
-                composer={
-                  composer?.anchor.bookId === book.id &&
-                  composer.anchor.sectionId === section?.id
-                    ? composer
-                    : null
-                }
-                draft={draft}
-                onDraft={setDraft}
-                attachments={questionAttachments}
-                onAttachments={setQuestionAttachments}
-                discussionDrafts={discussionDrafts}
-                onDiscussionDraft={(id, update) =>
-                  setDiscussionDrafts((previous) => ({
-                    ...previous,
-                    [id]: {
-                      ...(previous[id] ?? { text: "", attachments: [] }),
-                      ...update,
-                    },
-                  }))
-                }
-                scrollPositions={annotationScrollPositions.current}
-                onCancel={() => {
-                  setComposer(null);
-                  setDraft("");
-                  setQuestionAttachments([]);
-                  setRequestError(null);
-                }}
-                onBack={() => {
-                  setActiveAnnotation(null);
-                  setPreviewAnnotation(null);
-                }}
-                onAll={() => {
-                  setActiveAnnotation(null);
-                  setAnnotationSelection(null);
-                  setPreviewAnnotation(null);
-                }}
-                onPreview={setPreviewAnnotation}
-                onSelect={(annotation) =>
-                  selectAnnotation(annotation, true, true)
-                }
-                onLocate={() =>
-                  setAnnotationFocusRequest((request) => request + 1)
-                }
-                settings={modelSettings}
-                onSettings={() => navigate({ scale: "settings" })}
-                pendingId={pendingId}
-                requestError={requestError}
-                onAsk={(submission) =>
-                  composer
-                    ? sendQuestion(composer.anchor, draft, submission)
-                    : Promise.resolve(false)
-                }
-                onFollowUp={(annotation, question, submission) =>
-                  sendQuestion(
-                    annotation.anchor,
-                    question,
-                    submission,
-                    annotation,
-                  )
-                }
-              />
-            </Suspense>
-          )}
-        </div>
+        </ReaderSplit>
       </SidebarInset>
-      {inBook && (
-        <FloatingConversation
-          bookTitle={book.title}
-          annotationsOpen={annotationPaneVisible}
-          hasMessages={!!chatSession?.messages.length}
-          open={conversationOpen}
-          onOpenChange={openConversation}
-        >
-          {conversationView}
-        </FloatingConversation>
-      )}
+      <UndoToasts
+        notices={undoNotices}
+        onDismiss={(id) =>
+          setUndoNotices((current) =>
+            current.filter((notice) => notice.id !== id),
+          )
+        }
+      />
       <NewBookDialog
         open={newBookOpen}
         onOpenChange={setNewBookOpen}
