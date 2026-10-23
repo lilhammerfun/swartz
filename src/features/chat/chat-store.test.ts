@@ -1,6 +1,21 @@
+import {
+  INTEGRATION_KEY,
+  integrateConversation,
+  undoIntegration,
+  sessionIsSynthesized,
+  projectBook,
+  readIntegrations,
+  visibleMessages,
+} from "./book-integration.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { LearningBook } from "../../types/book.ts";
+import { learningBook } from "../../mock-data/book.ts";
+import { STORAGE_KEY as ANNOTATION_STORAGE_KEY } from "../annotations/annotation-store.ts";
+import {
+  importAnnotationSessions,
+  sessionPassages,
+} from "./session-passages.ts";
 import { ordinaryChatMessages } from "./chat-messages.ts";
 import {
   CHAT_STORAGE_KEY,
@@ -12,7 +27,17 @@ import {
   settleQuestion,
   startBookSession,
   updateChat,
+  parseChat,
 } from "./chat-store.ts";
+
+const passage = {
+  bookId: learningBook.id,
+  chapterId: learningBook.chapters[0].id,
+  sectionId: learningBook.chapters[0].sections[0].id,
+  paragraphId: learningBook.chapters[0].sections[0].paragraphs[0].id,
+  version: learningBook.version,
+  quote: "One owner per value.",
+};
 
 function memoryStorage() {
   const data = new Map<string, string>();
@@ -379,4 +404,318 @@ test("retry can repair the selected model and effort without duplicating the use
   const retained = retryQuestion(storage, session.id).sessions[0];
   assert.deepEqual(retained.request!.options, repaired.request!.options);
   assert.equal(retained.messages.length, 1);
+});
+
+test("explicit new sessions in one book keep independent drafts and histories", () => {
+  const storage = memoryStorage();
+  const first = startBookSession(storage, learningBook, true).session;
+  const second = startBookSession(storage, learningBook, true).session;
+  assert.notEqual(first.id, second.id);
+  updateChat(storage, (next) => {
+    next.sessions.find((s) => s.id === first.id)!.draft = "First draft";
+    next.sessions.find((s) => s.id === second.id)!.draft = "Second draft";
+  });
+  queueQuestion(storage, {
+    ...question,
+    sessionId: first.id,
+    bookId: learningBook.id,
+  });
+  const saved = readChat(storage);
+  assert.equal(
+    saved.sessions.find((s) => s.id === second.id)!.draft,
+    "Second draft",
+  );
+  assert.equal(
+    saved.sessions.find((s) => s.id === second.id)!.messages.length,
+    0,
+  );
+  assert.equal(
+    saved.sessions.find((s) => s.id === first.id)!.title,
+    question.text,
+  );
+});
+
+test("quoted context is persisted with its user message, retained on retry, and sent only as context", () => {
+  const storage = memoryStorage();
+  const session = startBookSession(storage, learningBook, true).session;
+  updateChat(storage, (next) => {
+    next.sessions[0].draftPassage = passage;
+    next.sessions[0].draft = question.text;
+  });
+  const queued = queueQuestion(storage, {
+    ...question,
+    sessionId: session.id,
+    bookId: learningBook.id,
+    passage,
+  });
+  assert.equal(queued.session.draftPassage, undefined);
+  assert.deepEqual(readChat(storage).sessions[0].messages[0].passage, passage);
+  const prompt = ordinaryChatMessages(queued.session, learningBook);
+  assert.deepEqual(JSON.parse(prompt.at(-1)!.content).selectedPassage, passage);
+  settleQuestion(storage, session.id, queued.session.messages[0].id, {
+    error: "Offline",
+  });
+  const retried = retryQuestion(storage, session.id).sessions[0];
+  assert.deepEqual(retried.messages[0].passage, passage);
+  assert.equal(retried.messages.length, 1);
+  settleQuestion(storage, session.id, retried.messages[0].id, {
+    answer: "An explanation.",
+  });
+  const continued = queueQuestion(storage, {
+    ...question,
+    sessionId: session.id,
+    text: "And borrowing?",
+    attachments: [],
+  });
+  assert.equal(continued.session.messages.at(-1)!.passage, undefined);
+  const marks = sessionPassages(readChat(storage).sessions);
+  assert.equal(marks.length, 1);
+  assert.equal(marks[0].id, retried.messages[0].id);
+  assert.equal(marks[0].anchor.paragraphId, passage.paragraphId);
+});
+
+test("cross-book and malformed passage references cannot overwrite a valid snapshot", () => {
+  const storage = memoryStorage();
+  const session = startBookSession(storage, learningBook, true).session;
+  const before = storage.getItem(CHAT_STORAGE_KEY);
+  assert.throws(() =>
+    queueQuestion(storage, {
+      ...question,
+      sessionId: session.id,
+      passage: { ...passage, bookId: "another-book" },
+    }),
+  );
+  assert.throws(() =>
+    queueQuestion(storage, {
+      ...question,
+      sessionId: session.id,
+      passage: { ...passage, quote: "" },
+    }),
+  );
+  assert.throws(() =>
+    updateChat(storage, (next) => {
+      next.sessions[0].draftPassage = { ...passage, bookId: "another-book" };
+    }),
+  );
+  assert.equal(storage.getItem(CHAT_STORAGE_KEY), before);
+  const queued = queueQuestion(storage, {
+    ...question,
+    sessionId: session.id,
+    passage,
+  }).snapshot;
+  queued.sessions[0].messages[0].role = "assistant";
+  assert.throws(() => parseChat(JSON.stringify(queued)));
+});
+
+test("annotation migration preserves original bytes, source identity, attachments, and history without reimporting", () => {
+  const storage = memoryStorage();
+  startBookSession(storage, learningBook, true);
+  const annotation = {
+    id: "old-question",
+    kind: "question",
+    anchor: passage,
+    text: question.text,
+    attachments: question.attachments,
+    createdAt: "2026-10-20T12:00:00Z",
+    messages: [
+      { id: "reply", role: "assistant", text: "Original response" },
+      { id: "follow", role: "user", text: "Another question" },
+    ],
+  };
+  const original = JSON.stringify([annotation]);
+  storage.setItem(ANNOTATION_STORAGE_KEY, original);
+  const imported = importAnnotationSessions(storage);
+  assert.equal(imported.sessions.length, 2);
+  const migrated = imported.sessions.find(
+    (s) => s.legacyAnnotationId === annotation.id,
+  )!;
+  assert.deepEqual(
+    migrated.messages.map((m) => m.text),
+    [question.text, "Original response", "Another question"],
+  );
+  assert.deepEqual(migrated.messages[0].attachments, question.attachments);
+  assert.equal(sessionPassages(imported.sessions)[0].id, annotation.id);
+  const continued = queueQuestion(storage, {
+    ...question,
+    sessionId: migrated.id,
+  }).session;
+  const again = importAnnotationSessions(storage);
+  assert.equal(again.sessions.length, 2);
+  assert.equal(
+    again.sessions.find((s) => s.id === migrated.id)!.messages.length,
+    continued.messages.length,
+  );
+  assert.equal(storage.getItem(ANNOTATION_STORAGE_KEY), original);
+});
+
+test("unreadable legacy data and failed migration writes never replace either original store", () => {
+  const storage = memoryStorage();
+  startBookSession(storage, learningBook, true);
+  const before = storage.getItem(CHAT_STORAGE_KEY);
+  storage.setItem(ANNOTATION_STORAGE_KEY, "broken");
+  assert.throws(() => importAnnotationSessions(storage));
+  assert.equal(storage.getItem(CHAT_STORAGE_KEY), before);
+  const original = JSON.stringify([
+    {
+      id: "old",
+      kind: "question",
+      text: "Why?",
+      anchor: passage,
+      createdAt: "2026-10-20T12:00:00Z",
+      messages: [],
+    },
+  ]);
+  storage.setItem(ANNOTATION_STORAGE_KEY, original);
+  assert.throws(() =>
+    importAnnotationSessions({
+      getItem: storage.getItem,
+      setItem: () => {
+        throw new Error("Quota");
+      },
+    }),
+  );
+  assert.equal(storage.getItem(CHAT_STORAGE_KEY), before);
+  assert.equal(storage.getItem(ANNOTATION_STORAGE_KEY), original);
+});
+
+test("organizing preserves original quoted conversations and links a persistent book section", () => {
+  const storage = memoryStorage();
+  const queued = queueQuestion(storage, {
+    bookId: learningBook.id,
+    text: "Why exclusive access?",
+    attachments: [],
+    options: {},
+    passage,
+  });
+  settleQuestion(storage, queued.session.id, queued.session.messages[0].id, {
+    answer:
+      "A writer needs exclusive access so readers cannot see a changing value.",
+  });
+  const session = readChat(storage).sessions[0];
+  const original = storage.getItem(CHAT_STORAGE_KEY);
+  const entries = integrateConversation(storage, session, learningBook);
+  assert.equal(storage.getItem(CHAT_STORAGE_KEY), original);
+  assert.deepEqual(
+    entries[0].messageIds,
+    session.messages.map((m) => m.id),
+  );
+  assert.equal(visibleMessages(session, readIntegrations(storage)).length, 0);
+  const projected = projectBook(learningBook, readIntegrations(storage));
+  assert.ok(
+    projected.chapters
+      .flatMap((c) => c.sections)
+      .some((s) => s.id === entries[0].section.id),
+  );
+  assert.equal(
+    learningBook.chapters
+      .flatMap((c) => c.sections)
+      .some((s) => s.id === entries[0].section.id),
+    false,
+  );
+  assert.throws(() => integrateConversation(storage, session, learningBook));
+  const next = queueQuestion(storage, {
+    sessionId: session.id,
+    text: "And what about shared access?",
+    attachments: [],
+    options: {},
+  });
+  assert.equal(visibleMessages(next.session, entries).length, 1);
+});
+
+test("ordinary chat can target an empty book; failed persistence never hides source messages", () => {
+  const storage = memoryStorage();
+  const queued = queueQuestion(storage, {
+    text: "How does ownership work?",
+    attachments: [],
+    options: {},
+  });
+  settleQuestion(storage, queued.session.id, queued.session.messages[0].id, {
+    answer: "Every value has one owner.",
+  });
+  const session = readChat(storage).sessions[0];
+  const emptyBook = { ...learningBook, id: "empty-book", chapters: [] };
+  const original = storage.getItem(CHAT_STORAGE_KEY);
+  const entries = integrateConversation(storage, session, emptyBook);
+  assert.equal(projectBook(emptyBook, entries).chapters[0].sections.length, 1);
+  assert.equal(entries[0].bookId, emptyBook.id);
+  assert.equal(storage.getItem(CHAT_STORAGE_KEY), original);
+  const failure = {
+    getItem: () => null,
+    setItem: () => {
+      throw new Error("Storage full");
+    },
+  };
+  assert.throws(
+    () => integrateConversation(failure, session, emptyBook),
+    /Storage full/,
+  );
+  assert.equal(visibleMessages(session, readIntegrations(failure)).length, 2);
+});
+
+test("undo restores session visibility and removes only its generated book section", () => {
+  const storage = memoryStorage();
+  const create = (text: string) => {
+    const queued = queueQuestion(storage, {
+      bookId: learningBook.id,
+      text,
+      attachments: [],
+      options: {},
+    });
+    settleQuestion(storage, queued.session.id, queued.session.messages[0].id, {
+      answer: "One writer or several readers.",
+    });
+    return readChat(storage).sessions.find(
+      (session) => session.id === queued.session.id,
+    )!;
+  };
+  const first = create("Explain exclusive access.");
+  const second = create("Explain shared access.");
+  const original = storage.getItem(CHAT_STORAGE_KEY);
+  const firstEntry = integrateConversation(storage, first, learningBook)[0];
+  const both = integrateConversation(storage, second, learningBook);
+  assert.equal(sessionIsSynthesized(first, both), true);
+  assert.equal(sessionIsSynthesized(second, both), true);
+  const remaining = undoIntegration(storage, firstEntry.id);
+  assert.equal(sessionIsSynthesized(first, remaining), false);
+  assert.equal(sessionIsSynthesized(second, remaining), true);
+  assert.deepEqual(visibleMessages(first, remaining), first.messages);
+  assert.equal(remaining.length, 1);
+  const sectionIds = projectBook(learningBook, remaining).chapters.flatMap(
+    (chapter) => chapter.sections.map((section) => section.id),
+  );
+  assert.equal(sectionIds.includes(firstEntry.section.id), false);
+  assert.equal(sectionIds.includes(remaining[0].section.id), true);
+  assert.equal(storage.getItem(CHAT_STORAGE_KEY), original);
+  assert.deepEqual(undoIntegration(storage, firstEntry.id), remaining);
+});
+
+test("a failed undo keeps book content and archived messages consistent", () => {
+  const storage = memoryStorage();
+  const queued = queueQuestion(storage, {
+    text: "Why borrow?",
+    attachments: [],
+    options: {},
+  });
+  settleQuestion(storage, queued.session.id, queued.session.messages[0].id, {
+    answer: "To access a value without taking ownership.",
+  });
+  const session = readChat(storage).sessions[0];
+  const entries = integrateConversation(storage, session, learningBook);
+  const saved = storage.getItem(INTEGRATION_KEY);
+  assert.throws(
+    () =>
+      undoIntegration(
+        {
+          getItem: storage.getItem,
+          setItem: () => {
+            throw new Error("Storage full");
+          },
+        },
+        entries[0].id,
+      ),
+    /Storage full/,
+  );
+  assert.equal(storage.getItem(INTEGRATION_KEY), saved);
+  assert.equal(sessionIsSynthesized(session, readIntegrations(storage)), true);
+  assert.equal(readChat(storage).sessions[0].messages.length, 2);
 });

@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import type { LearningBook, PromptAttachment } from "../../types/book";
+import type {
+  AnnotationAnchor,
+  LearningBook,
+  PromptAttachment,
+} from "../../types/book";
 import type { PromptSubmission } from "../annotations/prompt-options";
 import { askModel } from "../model/model-service";
 import type { ModelRequestOptions } from "../model/model-api";
 import { ordinaryChatMessages } from "./chat-messages";
+import { importAnnotationSessions } from "./session-passages";
 import {
   CHAT_STORAGE_KEY,
   emptyChat,
@@ -50,6 +55,8 @@ export function useChat() {
     if (loaded.current) return;
     loaded.current = true;
     try {
+      acceptSnapshot(readChat(localStorage));
+      importAnnotationSessions(localStorage);
       acceptSnapshot(recoverChat(localStorage));
     } catch (cause) {
       setError(errorMessage(cause));
@@ -188,6 +195,9 @@ export function useChat() {
             text: input.text.trim(),
             createdAt: new Date().toISOString(),
             attachments: input.submission.attachments,
+            ...(previous?.draftPassage
+              ? { passage: previous.draftPassage }
+              : {}),
           },
         ],
       } as ChatSession;
@@ -198,6 +208,7 @@ export function useChat() {
         text: input.text,
         attachments: input.submission.attachments,
         options,
+        passage: previous?.draftPassage,
       });
       acceptSnapshot(queued.snapshot);
       // Claim the single-flight slot before navigation can cause another submission.
@@ -268,9 +279,19 @@ export function useChat() {
         const session = next.sessions.find((item) => item.id === id);
         if (session) session.draftAttachments = files;
       }),
-    startSession: (book: LearningBook): string | undefined => {
+    setDraftPassage: (id: string, passage?: AnnotationAnchor) =>
+      saveDraft((next) => {
+        const session = next.sessions.find((item) => item.id === id);
+        if (!session) return;
+        if (passage) session.draftPassage = structuredClone(passage);
+        else delete session.draftPassage;
+      }),
+    startSession: (
+      book: LearningBook,
+      createNew = false,
+    ): string | undefined => {
       try {
-        const result = startBookSession(localStorage, book);
+        const result = startBookSession(localStorage, book, createNew);
         acceptSnapshot(result.snapshot);
         setError("");
         return result.session.id;

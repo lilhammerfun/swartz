@@ -43,12 +43,14 @@ export function ordinaryChatMessages(
   messages.push(
     ...session.messages.map((message) => ({
       role: message.role,
-      content: message.attachments?.length
-        ? JSON.stringify({
-            question: message.text,
-            attachments: message.attachments,
-          })
-        : message.text,
+      content:
+        message.attachments?.length || message.passage
+          ? JSON.stringify({
+              question: message.text,
+              attachments: message.attachments,
+              ...(message.passage ? { selectedPassage: message.passage } : {}),
+            })
+          : message.text,
     })),
   );
   if (
@@ -56,7 +58,7 @@ export function ordinaryChatMessages(
     messages.reduce((sum, message) => sum + message.content.length, 0) > 120000
   )
     throw new Error(
-      "This conversation is too long to send. Start a new question from Home.",
+      "This conversation is too long to send. Start a new session.",
     );
   return messages;
 }

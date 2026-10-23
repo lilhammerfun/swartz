@@ -1,4 +1,4 @@
-import type { PromptAttachment } from "../../types/book.ts";
+import type { AnnotationAnchor, PromptAttachment } from "../../types/book.ts";
 import type { ModelRequestOptions } from "../model/model-api.ts";
 
 export const CHAT_STORAGE_KEY = "tukdam.chat.v1";
@@ -8,6 +8,7 @@ export interface ConversationMessage {
   text: string;
   createdAt: string;
   attachments?: PromptAttachment[];
+  passage?: AnnotationAnchor;
 }
 export interface ChatRequest {
   id: string;
@@ -24,6 +25,8 @@ export interface ChatSession {
   updatedAt: string;
   draft: string;
   draftAttachments: PromptAttachment[];
+  draftPassage?: AnnotationAnchor;
+  legacyAnnotationId?: string;
   messages: ConversationMessage[];
   request?: ChatRequest;
 }
@@ -48,6 +51,18 @@ function text(value: unknown, max = 120000): value is string {
 }
 function date(value: unknown): value is string {
   return text(value, 64) && Number.isFinite(Date.parse(value));
+}
+export function validPassage(value: unknown): value is AnnotationAnchor {
+  return (
+    record(value) &&
+    ["bookId", "chapterId", "sectionId", "paragraphId"].every(
+      (key) => text(value[key], 256) && !!value[key],
+    ) &&
+    text(value.quote) &&
+    !!value.quote.trim() &&
+    Number.isInteger(value.version) &&
+    Number(value.version) > 0
+  );
 }
 export function validateAttachments(
   value: unknown,
@@ -105,6 +120,11 @@ export function parseChat(raw: string): ChatSnapshot {
       !date(session.updatedAt) ||
       !text(session.draft) ||
       !validateAttachments(session.draftAttachments) ||
+      (session.draftPassage !== undefined &&
+        (!validPassage(session.draftPassage) ||
+          session.draftPassage.bookId !== session.bookId)) ||
+      (session.legacyAnnotationId !== undefined &&
+        !text(session.legacyAnnotationId, 128)) ||
       (session.bookId !== undefined && !text(session.bookId, 256)) ||
       !Array.isArray(session.messages)
     )
@@ -123,6 +143,10 @@ export function parseChat(raw: string): ChatSnapshot {
         !text(message.text) ||
         !message.text.trim() ||
         !date(message.createdAt) ||
+        (message.passage !== undefined &&
+          (message.role !== "user" ||
+            !validPassage(message.passage) ||
+            message.passage.bookId !== session.bookId)) ||
         (message.attachments !== undefined &&
           !validateAttachments(message.attachments))
       )
@@ -191,6 +215,7 @@ export function queueQuestion(
     text: string;
     attachments: PromptAttachment[];
     options: ModelRequestOptions;
+    passage?: AnnotationAnchor;
   },
 ): { snapshot: ChatSnapshot; session: ChatSession } {
   const question = input.text.trim();
@@ -198,7 +223,8 @@ export function queueQuestion(
     !question ||
     question.length > 120000 ||
     !validateAttachments(input.attachments) ||
-    !optionsValid(input.options)
+    !optionsValid(input.options) ||
+    (input.passage !== undefined && !validPassage(input.passage))
   )
     throw new Error(
       "Enter a question with valid text or Markdown attachments.",
@@ -213,6 +239,8 @@ export function queueQuestion(
       throw new Error("This conversation could not be found.");
     if (session?.request)
       throw new Error("Retry the unanswered question before continuing.");
+    if (input.bookId && session?.bookId && input.bookId !== session.bookId)
+      throw new Error("This conversation belongs to a different book.");
     if (!session) {
       session = {
         id: `chat-${crypto.randomUUID()}`,
@@ -233,6 +261,7 @@ export function queueQuestion(
       role: "user",
       text: question,
       createdAt: now,
+      ...(input.passage ? { passage: structuredClone(input.passage) } : {}),
       ...(input.attachments.length
         ? { attachments: structuredClone(input.attachments) }
         : {}),
@@ -245,6 +274,8 @@ export function queueQuestion(
     };
     session.draft = "";
     session.draftAttachments = [];
+    delete session.draftPassage;
+    if (session.messages.length === 1) session.title = question.slice(0, 160);
     session.updatedAt = now;
     result = session;
   });
@@ -316,18 +347,19 @@ export function settleQuestion(
 export function startBookSession(
   storage: ChatStorage,
   book: { id: string; title: string },
+  createNew = false,
 ): { snapshot: ChatSnapshot; session: ChatSession } {
   const current = readChat(storage);
   const existing = current.sessions.find(
     (session) => session.bookId === book.id,
   );
-  if (existing) return { snapshot: current, session: existing };
+  if (existing && !createNew) return { snapshot: current, session: existing };
   let session!: ChatSession;
   const snapshot = updateChat(storage, (next) => {
     const now = new Date().toISOString();
     session = {
       id: `chat-${crypto.randomUUID()}`,
-      title: book.title.slice(0, 160),
+      title: "New session",
       bookId: book.id,
       createdAt: now,
       updatedAt: now,
