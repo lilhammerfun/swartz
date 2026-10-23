@@ -106,11 +106,25 @@ h1 {
   letter-spacing: -0.04em;
   margin: 0;
 }
-.hero-note {
+.hero-quote {
+  margin: 23px 0 0;
+}
+.hero-quote blockquote {
   font-size: 17px;
   line-height: 1.9;
+  margin: 0;
+}
+.hero-quote p {
+  margin: 0;
+}
+.hero-quote figcaption {
+  font-size: 11px;
+  line-height: 1.8;
   color: #666;
-  margin: 23px 0 0;
+  margin-top: 14px;
+}
+.hero-quote cite {
+  font-style: normal;
 }
 .portrait {
   margin: 0;
@@ -209,9 +223,11 @@ h1 {
   h1 {
     font-size: 53px;
   }
-  .hero-note {
-    font-size: 16px;
+  .hero-quote {
     margin-top: 18px;
+  }
+  .hero-quote blockquote {
+    font-size: 16px;
   }
   .portrait {
     max-width: 230px;

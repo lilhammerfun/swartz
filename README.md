@@ -2,7 +2,7 @@
 
 English · [简体中文](README.zh-CN.md)
 
-A public-benefit project for understanding and sharing knowledge: turning questions and exploration into a book of your own, and letting what one person learns become a path someone else can follow.
+A public-benefit project for understanding and sharing knowledge: turning questions and exploration into a book of your own.
 
 **[Read our conviction →](https://lilhammerfun.github.io/swartz-site/en/)**
 
