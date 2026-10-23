@@ -1,0 +1,270 @@
+@font-face {
+  font-family: "Source Serif";
+  src: url("fonts/source-serif-4-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif";
+  src: url("fonts/source-serif-4-latin-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif";
+  src: url("fonts/source-serif-4-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+:root {
+  color-scheme: light;
+  background: #fff;
+  color: #222;
+  font-family:
+    "Source Serif", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC",
+    serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-padding-top: 32px;
+}
+body {
+  margin: 0;
+}
+::selection {
+  background: #e6e6e6;
+}
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+a:hover {
+  color: #666;
+}
+a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 5px;
+}
+.shell {
+  width: min(740px, calc(100% - 64px));
+  margin-inline: auto;
+}
+.masthead,
+.portrait figcaption,
+.footer {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Noto Sans CJK SC",
+    "Microsoft YaHei",
+    sans-serif;
+}
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 30px;
+}
+.wordmark {
+  font-family: "Source Serif", Georgia, serif;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -1px;
+  text-decoration: none;
+}
+.masthead nav {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+}
+.masthead nav a {
+  text-decoration: none;
+}
+.source-link span {
+  margin-left: 4px;
+}
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 210px;
+  align-items: center;
+  gap: 48px;
+  padding-block: 45px 64px;
+}
+h1 {
+  font-weight: 400;
+  font-size: 64px;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.hero-note {
+  font-size: 17px;
+  line-height: 1.9;
+  color: #666;
+  margin: 23px 0 0;
+}
+.portrait {
+  margin: 0;
+}
+.portrait img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: grayscale(1);
+}
+.portrait figcaption {
+  margin-top: 10px;
+  font-size: 9px;
+  line-height: 1.8;
+  color: #777;
+}
+.portrait figcaption > span {
+  display: block;
+}
+.years {
+  margin-left: 5px;
+}
+.photo-credit {
+  margin-top: 3px;
+}
+.photo-credit a {
+  text-decoration: none;
+}
+.essay-section {
+  padding-block: 38px 42px;
+  border-top: 1px solid #e6e6e6;
+}
+.section-label h2 {
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.6;
+  margin: 0 0 28px;
+}
+.prose {
+  font-size: 18px;
+  line-height: 2;
+  overflow-wrap: break-word;
+}
+:lang(en) .prose {
+  font-size: 21px;
+  line-height: 1.75;
+}
+.prose p {
+  margin: 0 0 25px;
+}
+.prose > p:last-of-type {
+  margin-bottom: 0;
+}
+.prose blockquote {
+  margin: 0 0 30px;
+  padding-left: 22px;
+  border-left: 2px solid #ccc;
+  color: #555;
+}
+.prose blockquote p {
+  margin: 0;
+}
+:lang(en) .prose blockquote {
+  font-style: italic;
+}
+#vision .prose blockquote {
+  margin-block: 28px;
+}
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 25px 40px;
+  border-top: 1px solid #e6e6e6;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #777;
+}
+.footer p {
+  margin: 0;
+}
+.footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+.footer a {
+  text-decoration: none;
+}
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: -100px;
+  padding: 10px 16px;
+  background: #222;
+  color: #fff;
+  z-index: 1;
+}
+.skip-link:focus {
+  top: 16px;
+}
+@media (max-width: 640px) {
+  .shell {
+    width: calc(100% - 40px);
+  }
+  .masthead {
+    padding-block: 23px;
+  }
+  .masthead nav {
+    gap: 20px;
+    font-size: 11px;
+  }
+  .hero {
+    display: block;
+    padding-block: 26px 36px;
+  }
+  h1 {
+    font-size: 53px;
+  }
+  .hero-note {
+    font-size: 16px;
+    margin-top: 18px;
+  }
+  .portrait {
+    max-width: 230px;
+    margin-top: 32px;
+  }
+  .essay-section {
+    padding-block: 30px 34px;
+  }
+  .section-label h2 {
+    font-size: 19px;
+    margin-bottom: 24px;
+  }
+  .prose {
+    font-size: 17px;
+    line-height: 1.95;
+  }
+  :lang(en) .prose {
+    font-size: 20px;
+  }
+  .prose p {
+    margin-bottom: 22px;
+  }
+  .prose blockquote {
+    padding-left: 17px;
+  }
+  .footer {
+    display: block;
+    padding-block: 22px 30px;
+  }
+  .footer > div {
+    margin-top: 10px;
+    gap: 16px;
+  }
+}
