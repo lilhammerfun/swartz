@@ -2,21 +2,39 @@
 
 English · [简体中文](README.zh-CN.md)
 
-Make knowledge easier to reach and easier to understand.
+<div align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/0/06/Aaron_Swartz_profile.jpg" width="280" alt="Aaron Swartz" />
+  <br />
+  <sub>Aaron Swartz (1986–2013) — Photo by Fred Benenson, CC BY 2.0</sub>
+</div>
 
-Swartz is named in tribute to Aaron Swartz and continues my earlier [project of the same name on Codeberg](https://codeberg.org/lilhammerfun/swartz).
+<br />
+
+> _"Information is power. But like all power, there are those who want to keep it for themselves."_
+
+Aaron Swartz built RSS when he was 14. He wrote the code behind Creative Commons licenses. He co-founded Reddit. He created Open Library with the Internet Archive. He downloaded millions of federal court records from PACER and made them public. He led the fight that killed SOPA and PIPA.
+
+In 2011, he downloaded 4.8 million academic articles from JSTOR through MIT's network. Publicly funded research, locked behind paywalls. Federal prosecutors charged him with 13 felony counts — up to 35 years in prison. He was offered six months if he pled guilty. He refused. On January 11, 2013, he was found dead in his Brooklyn apartment. He was 26.
+
+JSTOR had already dropped the matter. MIT said nothing.
 
 ## What this project is about
 
-Putting knowledge online does not make it understandable. An explanation can be freely available and still assume a background the reader does not have. A textbook can contain all the answers and leave someone unable to work out where to begin.
+Swartz wrote in the same manifesto:
 
-How knowledge is organised matters. What should come first? What does an idea depend on? Which example makes an abstract rule clear? These connections give someone a path through a subject, and a way back when they get lost.
+> _"You have been given a privilege. You get to feed at this banquet of knowledge while the rest of the world is locked out. But you need not — indeed, morally, you cannot — keep this privilege for yourselves. You have a duty to share it with the world."_
 
-I started Tukdam around a small, personal experience: ask a question, follow the explanation, keep asking, and gradually turn that exploration into a book of your own. Something you can read again, question, correct, and keep building. Swartz carries that work forward toward the wider purpose behind the original project.
+He was talking about paywalls, but the problem is bigger than paywalls.
 
-I want what one person learns to become a path someone else can follow. People should be able to choose what they share, receive credit for explaining something well, and help each other improve it. Published knowledge should be free to read and obtain. Money should not decide whose explanation is seen or whose judgement counts.
+There's another kind of lock. When a textbook costs $200 and says in 300 pages what could be said in 30. When an expert writes for other experts and calls it "education." When the language around a subject is harder than the subject itself. You can put a paper on the internet for free and still make it impossible for most people to understand. That's not sharing. That's a locked door with no handle.
 
-This is a public-benefit project. Its purpose is to make learning and sharing knowledge easier. If that matters to you too, come build it together.
+I want to build an open network where anyone can publish what they know, organized in a way that others can actually follow. If you understand something, you can explain it and put it out there. If someone else explains it better, theirs rises to the top. The structure of how knowledge connects — what comes before what, what depends on what — is as important as the knowledge itself. That's what the internet is missing.
+
+Swartz was right. This is early, and I'd rather try than not. If you feel the same way, come build it together.
+
+This codebase grew out of Tukdam, a personal learning project, and continues the vision of my earlier [Swartz project on Codeberg](https://codeberg.org/lilhammerfun/swartz): turning questions and exploration into a book of your own, and letting what one person learns become a path someone else can follow.
+
+This is a public-benefit project. Published knowledge should be free to read and obtain. Recognition should come from explaining things well, sharing useful work, and helping correct mistakes. Money should not decide whose explanation is seen or whose judgement counts.
 
 ## Run locally
 
