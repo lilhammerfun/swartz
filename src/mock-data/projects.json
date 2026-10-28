@@ -8,47 +8,869 @@
     "goal": {
       "projectId": "project-backend-interview",
       "version": 1,
-      "content": "准备后端面试，能够解释主要机制、分析取舍，并通过对话沉淀自己的 textbook。"
+      "content": "面向后端架构师岗位，从请求执行与数据一致性出发，逐步形成系统设计、容量分析、故障治理和架构演进能力，并把讨论中的解释与取舍沉淀为自己的教材。"
     },
     "plan": {
       "projectId": "project-backend-interview",
       "version": 3,
-      "overview": "先从数据库的具体问题展开，再联系缓存与并发场景；顺序可以随讨论调整。",
+      "overview": "从运行原理与数据存储起步，逐步连接分布式机制、架构设计和生产治理，最后通过订单、搜索与系统迁移案例检验方案。",
       "nodes": [
         {
-          "id": "mysql",
-          "title": "MySQL",
-          "description": "围绕数据访问与并发问题探索数据库机制。",
+          "id": "foundations",
+          "title": "基础原理",
+          "description": "从运行中的请求出发，解释操作系统、网络与并发模型的约束。",
           "status": null,
           "children": [
             {
-              "id": "index",
-              "title": "索引与查询",
-              "description": "从查询示例讨论索引如何影响数据访问。",
-              "status": "completed",
-              "children": []
+              "id": "os",
+              "title": "操作系统",
+              "description": "围绕操作系统中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "process",
+                  "title": "进程与线程",
+                  "description": "沿一次上下文切换分析调度、栈与线程共享资源。",
+                  "status": "completed",
+                  "children": []
+                },
+                {
+                  "id": "memory",
+                  "title": "内存与 I/O",
+                  "description": "比较虚拟内存、页缓存、缓冲 I/O 与直接 I/O 的访问路径。",
+                  "status": "completed",
+                  "children": []
+                },
+                {
+                  "id": "concurrency",
+                  "title": "并发控制",
+                  "description": "用共享计数器解释原子操作、锁、内存可见性与死锁。",
+                  "status": "completed",
+                  "children": []
+                }
+              ]
             },
             {
-              "id": "transaction",
-              "title": "事务与隔离",
-              "description": "从并发读写的例子讨论隔离与实现机制。",
-              "status": "in_progress",
-              "children": []
+              "id": "network",
+              "title": "网络协议",
+              "description": "围绕网络协议中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "tcp",
+                  "title": "TCP 与连接管理",
+                  "description": "从丢包与慢客户端分析重传、连接池、超时和半连接队列。",
+                  "status": "completed",
+                  "children": []
+                },
+                {
+                  "id": "http",
+                  "title": "HTTP 与 TLS",
+                  "description": "追踪 HTTPS 请求中的 DNS、握手、连接复用与证书验证。",
+                  "status": "completed",
+                  "children": []
+                },
+                {
+                  "id": "io-model",
+                  "title": "事件驱动与异步",
+                  "description": "比较线程池、epoll 与异步任务在高并发连接场景中的代价。",
+                  "status": "completed",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "runtime",
+              "title": "语言与运行时",
+              "description": "围绕语言与运行时中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "type-system",
+                  "title": "类型与资源管理",
+                  "description": "比较 Rust 所有权、Go GC 与 JVM GC 对接口和资源生命周期的影响。",
+                  "status": "completed",
+                  "children": []
+                },
+                {
+                  "id": "profiling",
+                  "title": "运行时诊断",
+                  "description": "从 CPU profile、堆快照与线程栈定位性能瓶颈。",
+                  "status": "completed",
+                  "children": []
+                }
+              ]
             }
           ]
         },
         {
-          "id": "redis",
-          "title": "Redis",
-          "description": "结合具体使用场景讨论缓存。",
+          "id": "storage",
+          "title": "数据存储",
+          "description": "从访问模式、事务边界和故障恢复推导存储设计。",
           "status": null,
           "children": [
             {
-              "id": "cache-consistency",
-              "title": "缓存一致性",
-              "description": "讨论缓存与数据库更新时可能出现的问题。",
-              "status": "pending",
-              "children": []
+              "id": "mysql",
+              "title": "关系型数据库",
+              "description": "围绕关系型数据库中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "index",
+                  "title": "索引与查询",
+                  "description": "从订单列表 SQL 比较联合索引、覆盖索引、回表与执行计划。",
+                  "status": "completed",
+                  "children": []
+                },
+                {
+                  "id": "transaction",
+                  "title": "事务与隔离",
+                  "description": "复现并发扣库存，讨论 MVCC、锁、隔离级别与写偏差。",
+                  "status": "in_progress",
+                  "children": []
+                },
+                {
+                  "id": "recovery",
+                  "title": "日志与恢复",
+                  "description": "沿事务提交顺序解释 WAL、redo、binlog、刷盘与崩溃恢复。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "data-model",
+              "title": "数据建模",
+              "description": "围绕数据建模中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "schema",
+                  "title": "约束与模型边界",
+                  "description": "为订单、支付和退款设计主键、唯一约束与事务边界。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "migration",
+                  "title": "Schema 演进",
+                  "description": "比较新增字段、回填、双写与切换顺序，设计可回滚迁移。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "partition",
+                  "title": "分区与分片",
+                  "description": "从数据量和热点分布选择分片键，分析跨分片查询与扩容。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "storage-choice",
+              "title": "存储选型",
+              "description": "围绕存储选型中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "relational-doc",
+                  "title": "关系与文档模型",
+                  "description": "以商品属性查询为例，比较关系模型、JSON 与文档数据库。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "blob",
+                  "title": "对象存储",
+                  "description": "设计大文件上传、元数据、访问签名与生命周期管理。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "backup",
+                  "title": "备份与容灾",
+                  "description": "根据 RPO、RTO 制定备份、时间点恢复及恢复演练方案。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "cache-search",
+          "title": "缓存与检索",
+          "description": "把加速路径与事实来源分开，分析过期、回源与查询新鲜度。",
+          "status": null,
+          "children": [
+            {
+              "id": "redis",
+              "title": "缓存机制",
+              "description": "围绕缓存机制中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "cache-consistency",
+                  "title": "缓存一致性",
+                  "description": "推演更新数据库与失效缓存的竞态，以及可接受的不一致窗口。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "cache-hot",
+                  "title": "热点与回源",
+                  "description": "比较本地缓存、请求合并、随机过期和热点限流的作用。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "redis-memory",
+                  "title": "内存与持久化",
+                  "description": "分析 Redis 淘汰策略、内存放大、RDB 与 AOF 的恢复代价。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "search",
+              "title": "全文检索",
+              "description": "围绕全文检索中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "inverted-index",
+                  "title": "倒排与查询",
+                  "description": "从商品检索解释分词、倒排索引、过滤、排序与相关性。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "search-sync",
+                  "title": "索引同步",
+                  "description": "比较 CDC 与事件投递更新搜索索引时的延迟、乱序与重建。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "cache-design",
+              "title": "缓存设计",
+              "description": "围绕缓存设计中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "cache-key",
+                  "title": "键与失效策略",
+                  "description": "为多租户列表设计缓存键、版本、TTL 与失效粒度。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "cache-capacity",
+                  "title": "收益与成本",
+                  "description": "结合命中率、回源成本和内存预算判断哪些数据值得缓存。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "messaging",
+          "title": "消息与异步",
+          "description": "在任务解耦时显式处理重复、乱序、积压与失败。",
+          "status": null,
+          "children": [
+            {
+              "id": "delivery",
+              "title": "投递语义",
+              "description": "围绕投递语义中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "ack",
+                  "title": "确认与重试",
+                  "description": "追踪生产、持久化、消费和确认各阶段的故障窗口。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "idempotency",
+                  "title": "幂等消费",
+                  "description": "为支付回调设计幂等键、去重记录及与业务写入的原子性。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "ordering",
+                  "title": "分区与顺序",
+                  "description": "解释 Kafka 分区键、消费组、重平衡与业务顺序约束。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "workflow",
+              "title": "异步流程",
+              "description": "围绕异步流程中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "outbox",
+                  "title": "事务发件箱",
+                  "description": "用 Outbox 协调数据库提交与事件发布，并分析补偿路径。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "jobs",
+                  "title": "任务调度",
+                  "description": "设计延迟任务、租约续期、重试退避与死信处理。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "backpressure",
+              "title": "积压治理",
+              "description": "围绕积压治理中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "consumer-scale",
+                  "title": "消费者扩容",
+                  "description": "从消费延迟、分区数与下游吞吐判断扩容是否有效。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "replay",
+                  "title": "重放与兼容",
+                  "description": "设计事件版本、历史重放和防止重复副作用的保护。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "distributed",
+          "title": "分布式系统",
+          "description": "从网络不可靠和部分失败出发，明确一致性与可用性的取舍。",
+          "status": null,
+          "children": [
+            {
+              "id": "consistency",
+              "title": "一致性模型",
+              "description": "围绕一致性模型中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "replication",
+                  "title": "复制与读写语义",
+                  "description": "比较主从、法定人数读写和副本延迟对用户可见结果的影响。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "consensus",
+                  "title": "共识与选主",
+                  "description": "用分区和节点重启解释 Raft 日志、任期与多数派。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "consistency-level",
+                  "title": "一致性边界",
+                  "description": "区分线性一致、顺序一致、因果一致与最终一致的业务要求。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "coordination",
+              "title": "协调机制",
+              "description": "围绕协调机制中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "lease",
+                  "title": "租约与锁",
+                  "description": "分析锁过期、持有者暂停和 fencing token 防止旧写入的问题。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "discovery",
+                  "title": "服务发现",
+                  "description": "比较注册中心、DNS 与健康探测在实例变化时的行为。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "time",
+                  "title": "时钟与标识",
+                  "description": "讨论时钟回拨、全局 ID、逻辑时钟和事件排序。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "distributed-tx",
+              "title": "跨服务事务",
+              "description": "围绕跨服务事务中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "saga",
+                  "title": "Saga 与补偿",
+                  "description": "为下单、扣库存、支付建立可恢复流程，明确补偿失败处理。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "two-phase",
+                  "title": "两阶段提交",
+                  "description": "对比 2PC 与本地事务加事件在阻塞、复杂度和一致性上的代价。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "architecture",
+          "title": "架构设计",
+          "description": "先明确业务边界与质量要求，再决定模块、接口和部署边界。",
+          "status": null,
+          "children": [
+            {
+              "id": "boundaries",
+              "title": "业务边界",
+              "description": "围绕业务边界中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "domain",
+                  "title": "领域与上下文",
+                  "description": "通过订单和履约的职责冲突识别聚合、上下文与数据所有权。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "modularity",
+                  "title": "模块化单体",
+                  "description": "设计模块接口与依赖方向，控制共享数据库引入的耦合。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "microservices",
+                  "title": "服务拆分",
+                  "description": "依据团队、负载和故障隔离需求判断何时拆服务。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "contracts",
+              "title": "接口契约",
+              "description": "围绕接口契约中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "api",
+                  "title": "API 设计",
+                  "description": "设计分页、错误码、幂等请求及向后兼容的接口演进。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "sync-async",
+                  "title": "同步与异步边界",
+                  "description": "比较 RPC 与事件通信的延迟、耦合、调试和失败恢复。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "versioning",
+                  "title": "契约演进",
+                  "description": "为字段新增、弃用与消费者升级制定兼容顺序。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "decisions",
+              "title": "架构决策",
+              "description": "围绕架构决策中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "quality",
+                  "title": "质量属性",
+                  "description": "把可用性、延迟、吞吐、成本和数据保留要求变成可讨论的约束。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "tradeoffs",
+                  "title": "方案与取舍",
+                  "description": "用 ADR 记录候选方案、证据、代价与未来重新评估的触发条件。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "reliability",
+          "title": "性能与可靠性",
+          "description": "用负载、观测数据和故障场景检验设计，而不只比较组件参数。",
+          "status": null,
+          "children": [
+            {
+              "id": "performance",
+              "title": "性能工程",
+              "description": "围绕性能工程中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "capacity",
+                  "title": "容量估算",
+                  "description": "估算峰值请求、读写比例、存储增长、带宽和安全余量。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "latency",
+                  "title": "延迟与排队",
+                  "description": "结合 P95、P99 和队列长度解释尾延迟、饱和与线程池堆积。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "loadtest",
+                  "title": "压测与定位",
+                  "description": "设计可复现的负载模型，区分 CPU、I/O、锁和下游瓶颈。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "resilience",
+              "title": "故障韧性",
+              "description": "围绕故障韧性中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "timeouts",
+                  "title": "超时与重试预算",
+                  "description": "沿调用链分配 deadline，避免重试放大与请求雪崩。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "protection",
+                  "title": "限流与隔离",
+                  "description": "比较令牌桶、并发限制、熔断、舱壁与降级的适用边界。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "failover",
+                  "title": "故障切换",
+                  "description": "推演单节点、单可用区和依赖故障，检查切换与数据丢失窗口。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "sre",
+              "title": "SRE 实践",
+              "description": "围绕SRE 实践中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "slo",
+                  "title": "SLI 与 SLO",
+                  "description": "为核心用户旅程定义成功率和延迟指标，并讨论错误预算。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "incidents",
+                  "title": "演练与复盘",
+                  "description": "从时间线、影响范围、根因和恢复动作形成可执行改进。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "security",
+          "title": "安全与治理",
+          "description": "从信任边界、数据权限和变更控制建立系统防护。",
+          "status": null,
+          "children": [
+            {
+              "id": "identity",
+              "title": "身份与权限",
+              "description": "围绕身份与权限中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "authentication",
+                  "title": "认证与会话",
+                  "description": "比较 Cookie、JWT 与 OAuth/OIDC，分析撤销、过期与令牌泄漏。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "authorization",
+                  "title": "授权与租户隔离",
+                  "description": "为组织、项目和资源设计权限检查，防止越权与跨租户访问。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "app-security",
+              "title": "应用与数据安全",
+              "description": "围绕应用与数据安全中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "threats",
+                  "title": "威胁建模",
+                  "description": "沿请求入口识别注入、SSRF、反序列化和依赖供应链风险。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "secrets",
+                  "title": "密钥与加密",
+                  "description": "区分传输加密、静态加密、密钥轮换和日志脱敏。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "data-policy",
+                  "title": "数据生命周期",
+                  "description": "明确数据分类、最小权限、删除、审计和保留策略。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "governance",
+              "title": "工程治理",
+              "description": "围绕工程治理中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "review",
+                  "title": "变更与评审",
+                  "description": "为高风险接口、迁移和依赖升级制定评审与验收流程。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "cost",
+                  "title": "成本治理",
+                  "description": "按业务单元观察资源成本，分析闲置、过度冗余和单位请求成本。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "backend-delivery",
+          "title": "交付与运维",
+          "description": "建立从代码到生产的可观测、可回滚交付闭环。",
+          "status": null,
+          "children": [
+            {
+              "id": "platform",
+              "title": "运行平台",
+              "description": "围绕运行平台中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "containers",
+                  "title": "容器与资源",
+                  "description": "解释镜像、namespace、cgroup 与 CPU/内存限制。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "kubernetes",
+                  "title": "Kubernetes 工作负载",
+                  "description": "结合探针、调度、Service、滚动更新和 HPA 推演发布行为。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "infrastructure",
+                  "title": "基础设施即代码",
+                  "description": "管理环境差异、配置、状态和权限，避免手工变更漂移。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "release",
+              "title": "发布工程",
+              "description": "围绕发布工程中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "cicd",
+                  "title": "CI/CD 与制品",
+                  "description": "设计测试、构建、签名和环境晋级，保证同一制品可追溯。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "rollout",
+                  "title": "灰度与回滚",
+                  "description": "比较蓝绿、金丝雀、特性开关和数据库迁移对回滚的限制。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "observability",
+              "title": "可观测性",
+              "description": "围绕可观测性中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "signals",
+                  "title": "日志指标与追踪",
+                  "description": "用 OpenTelemetry 串联请求链路、结构化日志和低基数指标。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "alerting",
+                  "title": "告警与排障",
+                  "description": "从用户影响设置告警，建立排障入口、运行手册和噪声治理。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "practice",
+          "title": "架构实战",
+          "description": "用完整业务场景综合前面的机制、约束和取舍，沉淀成教材案例。",
+          "status": null,
+          "children": [
+            {
+              "id": "commerce",
+              "title": "订单与库存",
+              "description": "围绕订单与库存中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "checkout",
+                  "title": "下单与支付",
+                  "description": "设计订单状态机、库存预占、超时释放和支付回调幂等。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "flash-sale",
+                  "title": "高峰与热点",
+                  "description": "推演突发流量、排队、超卖风险、削峰和降级。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "commerce-review",
+                  "title": "方案评审",
+                  "description": "给出容量假设、数据模型、调用链、故障路径与成本估算。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "content",
+              "title": "内容与检索",
+              "description": "围绕内容与检索中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "feed",
+                  "title": "内容分发",
+                  "description": "比较推拉结合、热点缓存、时间线分页和内容删除传播。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "search-case",
+                  "title": "搜索系统",
+                  "description": "设计采集、索引、查询与重建流程，检查数据新鲜度和恢复。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "id": "evolution",
+              "title": "架构演进",
+              "description": "围绕架构演进中的机制、故障场景与方案取舍展开探究。",
+              "status": null,
+              "children": [
+                {
+                  "id": "migration-case",
+                  "title": "单体到服务化",
+                  "description": "制定渐进迁移、流量切换、数据所有权转移和回退方案。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "failure-case",
+                  "title": "故障复盘推演",
+                  "description": "从数据库抖动和消息积压定位瓶颈，更新设计与运维策略。",
+                  "status": "pending",
+                  "children": []
+                },
+                {
+                  "id": "textbook-case",
+                  "title": "知识编撰",
+                  "description": "把确认过的解释、架构图和取舍整理为相互关联的教材章节。",
+                  "status": "pending",
+                  "children": []
+                }
+              ]
             }
           ]
         }
