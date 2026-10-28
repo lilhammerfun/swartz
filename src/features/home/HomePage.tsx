@@ -1,5 +1,3 @@
-import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { QuestionInput } from "@/features/annotations/QuestionInput";
 import type { PromptSubmission } from "@/features/annotations/prompt-options";
@@ -20,54 +18,23 @@ export interface HomeComposerProps {
   onAttachmentsChange?: (attachments: PromptAttachment[]) => void;
 }
 
-export interface HomePageProps extends HomeComposerProps {
-  recentBooks?: { id: string; title: string; subtitle: string }[];
-  onResume: (bookId: string) => void;
-}
-
-export function HomePage({
-  recentBooks = [],
-  onResume,
-  ...composer
-}: HomePageProps) {
+export function HomePage(composer: HomeComposerProps) {
   return (
     <ScrollArea className="h-full min-h-0 flex-1">
       <section
-        className="mx-auto w-full max-w-2xl px-6 pt-[clamp(48px,18vh,160px)] pb-12"
+        className="mx-auto flex min-h-[calc(100dvh-48px)] w-full max-w-2xl flex-col justify-center px-6 pt-12 pb-[clamp(64px,18vh,160px)]"
         aria-label="Start learning"
       >
+        <header className="mb-7 text-center">
+          <h1 className="text-2xl leading-tight font-normal">
+            What’s on your mind?
+          </h1>
+        </header>
         <QuestionInput
           {...composer}
           label="Start a conversation"
-          placeholder="What would you like to explore?"
+          placeholder="Ask a question or describe what you want to explore…"
         />
-        {recentBooks.length > 0 && (
-          <div className="mt-12 space-y-2">
-            <h2 className="px-2 text-xs font-medium text-muted-foreground">
-              Continue learning
-            </h2>
-            {recentBooks.slice(0, 3).map((book) => (
-              <Button
-                key={book.id}
-                variant="ghost"
-                className="h-auto w-full justify-start gap-4 px-2 py-3 text-left font-normal"
-                onClick={() => onResume(book.id)}
-              >
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate text-sm font-medium">
-                    {book.title}
-                  </span>
-                  {book.subtitle && (
-                    <span className="truncate text-xs text-muted-foreground">
-                      {book.subtitle}
-                    </span>
-                  )}
-                </span>
-                <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
-              </Button>
-            ))}
-          </div>
-        )}
       </section>
     </ScrollArea>
   );

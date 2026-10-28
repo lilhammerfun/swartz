@@ -1,322 +1,285 @@
 import { useState } from "react";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type {
   Project,
   LibrarySection,
   LibraryChange,
 } from "@/features/projects/project-data";
+import { orderRecentProjects } from "@/features/projects/project-data";
 import { projectError } from "@/features/projects/useProjects";
+import { Link } from "react-router";
+import { IconButton } from "@/components/ui/IconButton";
+import type { SectionAction } from "./LibrarySectionDialog";
 import { BookCover } from "./BookCover";
-
-type SectionDialog =
-  { kind: "create" } | { kind: "rename" | "delete"; section: LibrarySection };
 
 export function LibraryPage({
   projects,
   sections,
-  loading,
   saving,
-  error,
-  onRetry,
   onOpen,
   onChange,
+  selecting,
+  onSelectingChange,
+  sectionId = null,
+  recent,
+  showAll = false,
+  onSectionAction,
 }: {
   projects: readonly Project[];
   sections: readonly LibrarySection[];
-  loading: boolean;
   saving: boolean;
-  error: string;
-  onRetry: () => void;
   onOpen: (project: Project) => void;
   onChange: (change: LibraryChange) => Promise<void>;
+  selecting: boolean;
+  onSelectingChange: (value: boolean) => void;
+  sectionId?: string | null;
+  showAll?: boolean;
+  onSectionAction: (action: SectionAction) => void;
+  recent: readonly { bookId?: string; updatedAt: string }[];
 }) {
-  const [dialog, setDialog] = useState<SectionDialog | null>(null);
-  const [name, setName] = useState("");
-  const [actionError, setActionError] = useState("");
-  const [dialogError, setDialogError] = useState("");
-  function openDialog(next: SectionDialog) {
-    setName(next.kind === "create" ? "" : next.section.name);
-    setDialogError("");
-    setDialog(next);
-  }
-  async function move(project: Project, sectionId: string | null) {
-    setActionError("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [error, setError] = useState("");
+  const section = sections.find((item) => item.id === sectionId);
+  // Recent 是所有项目的系统视图，不能用空分区归属来过滤。
+  const visible = section
+    ? projects.filter((item) => item.librarySectionId === section.id)
+    : orderRecentProjects(projects, recent);
+  const ids = selected.filter((id) => visible.some((item) => item.id === id));
+  async function move(sectionId: string | null) {
+    setError("");
     try {
-      await onChange({
-        kind: "move_project",
-        projectId: project.id,
-        sectionId,
-      });
+      await onChange({ kind: "move_projects", projectIds: ids, sectionId });
+      setSelected([]);
+      onSelectingChange(false);
     } catch (cause) {
-      setActionError(projectError(cause));
+      setError(projectError(cause));
     }
   }
-  function shelf(items: readonly Project[]) {
-    return items.length ? (
-      <div className="library-bookshelf">
-        {items.map((project) => (
-          <div key={project.id} className="library-book-item">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="library-book"
-                  aria-label={`Open project: ${project.title}`}
-                  onClick={() => onOpen(project)}
+  function shelf(items: readonly Project[], preview = false) {
+    return (
+      <div
+        className={
+          preview
+            ? "library-bookshelf library-bookshelf-preview"
+            : "library-bookshelf"
+        }
+      >
+        {items.map((project) => {
+          const checked = ids.includes(project.id);
+          return (
+            <button
+              key={project.id}
+              type="button"
+              className="library-book"
+              aria-label={`${selecting ? "Select" : "Open project:"} ${project.title}`}
+              aria-pressed={selecting ? checked : undefined}
+              disabled={saving}
+              onClick={() => {
+                if (!selecting) return onOpen(project);
+                setSelected((current) =>
+                  checked
+                    ? current.filter((id) => id !== project.id)
+                    : [...current, project.id],
+                );
+              }}
+            >
+              <BookCover id={project.id} title={project.title} />
+              {selecting && (
+                <span
+                  className="library-selection-check"
+                  data-checked={checked}
                 >
-                  <BookCover id={project.id} title={project.title} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={10}>
-                {project.title}
-              </TooltipContent>
-            </Tooltip>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="library-book-menu"
-                  aria-label={`Organize ${project.title}`}
-                  disabled={saving}
-                >
-                  <MoreHorizontal />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Move to section</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={project.librarySectionId ?? ""}
-                  onValueChange={(value) => {
-                    void move(project, value || null);
-                  }}
-                >
-                  <DropdownMenuRadioItem value="">
-                    Ungrouped
-                  </DropdownMenuRadioItem>
-                  {sections.map((section) => (
-                    <DropdownMenuRadioItem key={section.id} value={section.id}>
-                      {section.name}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ))}
+                  {checked && <Check size={14} />}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
-    ) : (
-      <p className="project-empty">No projects in this section.</p>
     );
   }
-  const ungrouped = projects.filter((project) => !project.librarySectionId);
+  const fullView = !!section || showAll || selecting;
+  const shelves = fullView
+    ? [
+        {
+          id: section?.id ?? null,
+          name: section?.name ?? "Recent",
+          items: visible,
+        },
+      ]
+    : [
+        { id: null, name: "Recent", items: visible },
+        ...sections.map((item) => ({
+          ...item,
+          items: projects.filter(
+            (project) => project.librarySectionId === item.id,
+          ),
+        })),
+      ];
   return (
     <section className="library-page-scroll" aria-label="Library">
       <div className="library-page">
-        <div className="library-toolbar">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={loading || !!error || saving}
-            onClick={() => openDialog({ kind: "create" })}
-          >
-            <Plus />
-            New section
-          </Button>
-        </div>
-        {actionError && (
-          <p role="alert" className="mb-4 text-sm text-destructive">
-            {actionError}
-          </p>
-        )}
-        {loading ? (
-          <p role="status" className="project-empty">
-            Loading projects…
-          </p>
-        ) : error ? (
-          <div role="alert" className="space-y-3">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={onRetry}>
-              Retry
-            </Button>
+        {selecting && (
+          <div className="library-view-header">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <span className="text-xs text-muted-foreground" role="status">
+                {ids.length} selected
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={saving || !visible.length}
+                onClick={() =>
+                  setSelected(
+                    ids.length === visible.length
+                      ? []
+                      : visible.map((item) => item.id),
+                  )
+                }
+              >
+                {ids.length === visible.length ? "Deselect all" : "Select all"}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={saving || !ids.length || !sections.length}
+                  >
+                    Move to section
+                    <ChevronDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuGroup>
+                    {sections.map((item) => (
+                      <DropdownMenuItem
+                        key={item.id}
+                        onSelect={() => void move(item.id)}
+                      >
+                        {item.name}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {section && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={saving || !ids.length}
+                  onClick={() => void move(null)}
+                >
+                  Remove from section
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={saving}
+                onClick={() => {
+                  setSelected([]);
+                  setError("");
+                  onSelectingChange(false);
+                }}
+              >
+                Done
+              </Button>
+            </div>
           </div>
-        ) : (
-          <TooltipProvider delayDuration={450}>
-            {sections.map((section) => (
-              <div className="library-section" key={section.id}>
-                <details open>
-                  <summary className="library-section-title">
-                    {section.name}
-                  </summary>
-                  {shelf(
-                    projects.filter(
-                      (project) => project.librarySectionId === section.id,
-                    ),
-                  )}
-                </details>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="library-section-menu"
-                      aria-label={`Section options: ${section.name}`}
-                      disabled={saving}
-                    >
-                      <MoreHorizontal />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={() => openDialog({ kind: "rename", section })}
-                    >
-                      Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onSelect={() => openDialog({ kind: "delete", section })}
-                    >
-                      Delete section
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-            {ungrouped.length > 0 ? (
-              sections.length ? (
-                <details className="library-section" open>
-                  <summary className="library-section-title">Ungrouped</summary>
-                  {shelf(ungrouped)}
-                </details>
-              ) : (
-                shelf(ungrouped)
-              )
-            ) : (
-              !sections.length && (
-                <p className="project-empty">
-                  No projects yet. Start an exploration from Home.
-                </p>
-              )
-            )}
-          </TooltipProvider>
         )}
-      </div>
-      <Dialog
-        open={dialog !== null}
-        onOpenChange={(open) => {
-          if (!open && !saving) setDialog(null);
-        }}
-      >
-        <DialogContent>
-          <form
-            className="space-y-4"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              if (!dialog || saving) return;
-              setDialogError("");
-              try {
-                if (dialog.kind === "delete")
-                  await onChange({
-                    kind: "delete_section",
-                    id: dialog.section.id,
-                  });
-                else if (dialog.kind === "rename")
-                  await onChange({
-                    kind: "rename_section",
-                    id: dialog.section.id,
-                    name: name.trim(),
-                  });
-                else
-                  await onChange({
-                    kind: "create_section",
-                    id: crypto.randomUUID(),
-                    name: name.trim(),
-                  });
-                setDialog(null);
-              } catch (cause) {
-                setDialogError(projectError(cause));
-              }
-            }}
+        {error && (
+          <p role="alert" className="mb-4 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        {shelves.map((group) => (
+          <section
+            key={group.id ?? "recent"}
+            className="library-shelf"
+            aria-label={group.name}
           >
-            <DialogTitle>
-              {dialog?.kind === "delete"
-                ? "Delete section"
-                : dialog?.kind === "rename"
-                  ? "Rename section"
-                  : "New section"}
-            </DialogTitle>
-            <DialogDescription>
-              {dialog?.kind === "delete"
-                ? `Projects in “${dialog.section.name}” will move to Ungrouped.`
-                : "Organize your projects on the bookshelf."}
-            </DialogDescription>
-            {dialog?.kind !== "delete" && (
-              <div className="space-y-2">
-                <label htmlFor="section-name">Section name</label>
-                <Input
-                  id="section-name"
-                  autoFocus
-                  required
-                  maxLength={80}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  disabled={saving}
-                />
+            <header className="library-shelf-header">
+              <h2>{group.name}</h2>
+              <div className="flex items-center gap-1">
+                {!fullView && (
+                  <IconButton
+                    asChild
+                    label={`View all: ${group.name}`}
+                    variant="link"
+                    className="rounded-full text-muted-foreground hover:text-foreground"
+                  >
+                    <Link
+                      to={
+                        group.id
+                          ? `/library?section=${encodeURIComponent(group.id)}`
+                          : "/library?view=recent"
+                      }
+                    >
+                      <ChevronRight />
+                    </Link>
+                  </IconButton>
+                )}
+                {group.id && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton
+                        label={`Section options: ${group.name}`}
+                        className="rounded-full"
+                        disabled={saving}
+                      >
+                        <MoreHorizontal />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuGroup>
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            onSectionAction({
+                              kind: "rename",
+                              section: { id: group.id!, name: group.name },
+                            })
+                          }
+                        >
+                          Rename section
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onSelect={() =>
+                            onSectionAction({
+                              kind: "delete",
+                              section: { id: group.id!, name: group.name },
+                            })
+                          }
+                        >
+                          Delete section
+                        </DropdownMenuItem>
+                      </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
-            )}
-            {dialogError && (
-              <p role="alert" className="text-sm text-destructive">
-                {dialogError}
+            </header>
+            {group.items.length ? (
+              shelf(group.items, !fullView)
+            ) : (
+              <p className="project-empty">
+                {group.id
+                  ? "No projects in this section."
+                  : "No projects yet. Start an exploration from Home."}
               </p>
             )}
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => setDialog(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant={dialog?.kind === "delete" ? "destructive" : "default"}
-                disabled={saving || (dialog?.kind !== "delete" && !name.trim())}
-              >
-                {saving
-                  ? "Saving…"
-                  : dialog?.kind === "delete"
-                    ? "Delete section"
-                    : "Save"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </section>
+        ))}
+      </div>
     </section>
   );
 }

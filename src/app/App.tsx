@@ -5,6 +5,7 @@ import {
   useNavigate,
   useNavigation,
   useNavigationType,
+  useRevalidator,
 } from "react-router";
 import { locationPath, type ReaderRouteHandle } from "./route-location";
 import type { AppRouteContext } from "./app-route-context";
@@ -19,7 +20,6 @@ import {
   MessagesSquare,
   Maximize2,
   Minus,
-  Plus,
   PanelRight,
   X,
 } from "lucide-react";
@@ -36,7 +36,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { IconButton } from "@/components/ui/IconButton";
+import {
+  LibrarySectionDialog,
+  type SectionAction,
+} from "@/features/library/LibrarySectionDialog";
 import { LibrarySidebar } from "@/features/library/LibrarySidebar";
+import { GettingStarted } from "@/features/home/GettingStarted";
 import { useLibrary } from "@/features/library/useLibrary";
 import { useProjects } from "@/features/projects/useProjects";
 import {
@@ -105,6 +110,11 @@ function loadRecent() {
 }
 
 export default function App() {
+  const [sectionAction, setSectionAction] = useState<SectionAction | null>(
+    null,
+  );
+  const [selectingProjects, setSelectingProjects] = useState(false);
+  const revalidator = useRevalidator();
   const routerLocation = useLocation();
   const routerNavigate = useNavigate();
   const navigation = useNavigation();
@@ -428,47 +438,6 @@ export default function App() {
       panel.openSession(id, target.id);
     } else navigate({ scale: "chat", conversationId: id });
   };
-  const resumeLearning = (id: string) => {
-    const entry = recent.entries.find((item) => item.id === id);
-    if (!entry) return;
-    if (entry.location.scale === "chat") {
-      openSavedConversation(entry.location.conversationId);
-    } else {
-      const target = library.books.find((item) => item.id === entry.bookId);
-      if (target) openBook(target);
-    }
-  };
-  const recentBooks = recent.entries
-    .flatMap((entry) => {
-      if (entry.location.scale === "chat") {
-        const session = chat.getSession(entry.location.conversationId);
-        if (!session || !session.messages.length) return [];
-        const target = library.books.find((item) => item.id === session.bookId);
-        return [
-          {
-            id: entry.id,
-            title: target?.title ?? session.title,
-            subtitle: target
-              ? (session.messages.filter((m) => m.role === "user").at(-1)
-                  ?.text ?? "")
-              : "",
-          },
-        ];
-      }
-      const target = library.books.find((item) => item.id === entry.bookId);
-      if (!target) return [];
-      const destination = entry.location;
-      const section =
-        destination.scale === "section"
-          ? target.chapters
-              .find((c) => c.id === destination.chapterId)
-              ?.sections.find((s) => s.id === destination.sectionId)
-          : undefined;
-      return [
-        { id: entry.id, title: target.title, subtitle: section?.title ?? "" },
-      ];
-    })
-    .slice(0, 3);
   const sendOrdinaryQuestion = async (
     submission: PromptSubmission,
   ): Promise<boolean> => {
@@ -712,17 +681,16 @@ export default function App() {
       onSettings: () => navigate({ scale: "settings" }),
       onConfigure: () => navigate({ scale: "settings" }),
       onSend: sendOrdinaryQuestion,
-      recentBooks,
-      onResume: resumeLearning,
     },
     library: {
       projects: projects.projects,
       sections: projects.sections,
       saving: projects.saving,
       onChange: projects.updateLibrary,
-      loading: projects.loading,
-      error: projects.error,
-      onRetry: projects.retry,
+      recent: recent.entries,
+      selecting: selectingProjects,
+      onSelectingChange: setSelectingProjects,
+      onSectionAction: setSectionAction,
       onOpen: (project) =>
         navigate({ scale: "project", projectId: project.id }),
     },
@@ -773,7 +741,23 @@ export default function App() {
       style={{ "--sidebar-width": "256px" } as React.CSSProperties}
     >
       <LibrarySidebar
+        footer={
+          <GettingStarted
+            configured={configured}
+            projects={projects.projects}
+            details={projects.details}
+            loading={projects.loading}
+            loadDetail={projects.loadDetail}
+            onNavigate={navigate}
+          />
+        }
         book={book}
+        onNewProject={() => navigate({ scale: "home" })}
+        onNewSection={() => setSectionAction({ kind: "create" })}
+        onSelectProjects={() => {
+          setSelectingProjects(true);
+          if (location.scale !== "library") void routerNavigate("/library");
+        }}
         location={location}
         onNavigate={navigate}
         onSearch={() => setSearchOpen(true)}
@@ -781,6 +765,21 @@ export default function App() {
           inBook || (location.scale === "chat" && !!chatSession?.bookId)
         }
       />
+      {sectionAction && (
+        <LibrarySectionDialog
+          key={
+            sectionAction.kind +
+            (sectionAction.kind === "create" ? "" : sectionAction.section.id)
+          }
+          action={sectionAction}
+          onClose={() => setSectionAction(null)}
+          saving={projects.saving}
+          onChange={async (change) => {
+            await projects.updateLibrary(change);
+            await revalidator.revalidate();
+          }}
+        />
+      )}
       <SidebarInset
         className="reader-workspace"
         style={
@@ -847,16 +846,6 @@ export default function App() {
                 ref={setSessionToolbar}
                 className="flex h-full min-w-0 flex-1"
               />
-            )}
-            {location.scale === "library" && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate({ scale: "home" })}
-              >
-                <Plus />
-                New project
-              </Button>
             )}
             {location.scale === "chat" && chatSession?.bookId && (
               <IconButton label="Read book" onClick={() => openBook(book)}>

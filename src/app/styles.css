@@ -397,6 +397,7 @@ body {
   align-items: start;
 }
 .library-book {
+  position: relative;
   display: block;
   width: 100%;
   max-width: 180px;
@@ -1135,39 +1136,41 @@ details > .project-node-description {
   }
 }
 
-/* 分区是书架的组织层，项目菜单独立于封面按钮，保留键盘可达性。 */
-.library-toolbar {
+/* 分区管理属于侧栏；书架只在显式选择模式显示操作。 */
+.library-view-header {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 24px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
 }
-.library-section {
-  position: relative;
-  margin-bottom: 44px;
-}
-.library-section-title {
-  cursor: pointer;
-  padding: 4px 40px 20px 0;
+.library-view-header h1 {
   font-size: 14px;
   font-weight: 500;
+  color: var(--muted-foreground);
+}
+.library-selection-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--background);
   color: var(--foreground);
 }
-.library-section-menu {
-  position: absolute;
-  top: -2px;
-  right: 0;
+.library-selection-check[data-checked="true"] {
+  background: var(--foreground);
+  color: var(--background);
 }
-.library-book-item {
-  position: relative;
-  min-width: 0;
-  max-width: 180px;
-  padding-bottom: 30px;
-}
-.library-book-menu {
-  position: absolute;
-  bottom: -2px;
-  right: -4px;
-  color: var(--muted-foreground);
+.library-book[aria-pressed="true"] {
+  outline: 2px solid var(--foreground);
+  outline-offset: 5px;
+  border-radius: 5px;
 }
 
 .route-navigation-status {
@@ -1181,4 +1184,31 @@ details > .project-node-description {
   color: var(--muted-foreground);
   font-size: 12px;
   box-shadow: 0 1px 4px #00000010;
+}
+
+.library-shelf {
+  margin-bottom: 42px;
+}
+.library-shelf-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.library-shelf-header h2 {
+  font-size: 14px;
+  font-weight: 500;
+}
+.library-bookshelf-preview > :nth-child(n + 5) {
+  display: none;
+}
+@container reader (max-width: 840px) {
+  .library-bookshelf-preview > :nth-child(n + 4) {
+    display: none;
+  }
+}
+@container reader (max-width: 580px) {
+  .library-bookshelf-preview > :nth-child(n + 3) {
+    display: none;
+  }
 }
