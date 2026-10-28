@@ -1,4 +1,4 @@
-<p>
+<p align="center">
   <img src="public/logo.png" alt="Swartz logo" width="96" height="96" />
 </p>
 
