@@ -157,10 +157,7 @@ export function QuestionInput({
             }
           }}
         />
-        <InputGroup
-          aria-busy={pending}
-          className="rounded-2xl border-border bg-muted/60"
-        >
+        <InputGroup aria-busy={pending} className="rounded-2xl border-border">
           {files.length > 0 && (
             <InputGroupAddon align="block-start" className="flex-wrap">
               {files.map((file) => (
