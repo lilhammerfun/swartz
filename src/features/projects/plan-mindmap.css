@@ -1,0 +1,123 @@
+.plan-mindmap {
+  position: relative;
+}
+.plan-mindmap-toolbar {
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.plan-mindmap-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.plan-mindmap .plan-mindmap-toolbar button > svg:not([class*="size-"]) {
+  width: 14px;
+  height: 14px;
+}
+.project-plan .plan-mindmap-toolbar h2 {
+  margin: 0;
+  line-height: 24px;
+}
+.plan-mindmap-canvas {
+  width: 100%;
+  height: 600px;
+  overflow: hidden;
+}
+.plan-mindmap .map-container {
+  font-family: inherit;
+}
+.plan-mindmap me-tpc {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+  max-width: 180px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  font-family: "Source Serif 4", "KaiTi", "STKaiti", serif;
+}
+.plan-mindmap me-root me-tpc {
+  max-width: 200px;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 18px 22px;
+  border-radius: 0;
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+.plan-mindmap me-tpc > svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--muted-foreground);
+}
+.plan-mindmap me-tpc[data-status="completed"] > svg {
+  color: var(--status-completed);
+}
+.plan-mindmap me-tpc[data-status="in_progress"] > svg {
+  color: var(--status-in-progress);
+}
+.plan-mindmap me-tpc:focus-visible,
+.plan-mindmap me-epd:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.plan-mindmap-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.plan-mindmap-description {
+  min-height: 52px;
+  padding-top: 12px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.plan-mindmap-description > span {
+  font-weight: 500;
+}
+.plan-mindmap-description p {
+  margin: 2px 0 0;
+  color: var(--muted-foreground);
+}
+@container reader (max-width: 580px) {
+  .plan-mindmap-canvas {
+    height: 480px;
+  }
+}
+
+.plan-mindmap .lines path {
+  stroke-width: 1.5px;
+}
+.plan-mindmap .subLines path {
+  stroke-width: 1.4px;
+  stroke-linecap: round;
+}
+.plan-mindmap me-main > me-wrapper > me-parent > me-tpc {
+  border: none;
+  font-size: 16px;
+}
+
+.plan-mindmap:fullscreen {
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  padding: 24px;
+}
+.plan-mindmap:fullscreen .plan-mindmap-canvas {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.plan-mindmap me-tpc[data-plan-selected="true"] {
+  outline: 1px solid var(--ring);
+  outline-offset: 2px;
+}

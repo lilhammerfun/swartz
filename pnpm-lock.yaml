@@ -32,6 +32,9 @@ importers:
       lucide-react:
         specifier: 1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)
+      mind-elixir:
+        specifier: 5.9.3
+        version: 5.9.3
       radix-ui:
         specifier: 1.8.1
         version: 1.8.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -1951,6 +1954,9 @@ packages:
 
   micromark@4.0.3:
     resolution: {integrity: sha512-oGYfQzHSG5dOMovQcJ3fyTmZlWAWpi0XA0sJwJs+i6OT88o1+Jtw/8z0CmdowSLxGhhFK89rQ/oXph/wN02PNw==}
+
+  mind-elixir@5.9.3:
+    resolution: {integrity: sha512-OTTO6ofvDuzN4fxuBngqhQLJmIqModr2NgQb4OY+5DGRt54B+YNAvNnlspYwUXXGq2Rbht1DhXgeU4dr4CUy6Q==}
 
   minimatch@10.2.6:
     resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
@@ -4199,6 +4205,8 @@ snapshots:
       micromark-util-types: 2.0.3
     transitivePeerDependencies:
       - supports-color
+
+  mind-elixir@5.9.3: {}
 
   minimatch@10.2.6:
     dependencies:

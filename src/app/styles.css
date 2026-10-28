@@ -566,18 +566,21 @@ body {
       7px 12px 18px -10px #00000016;
   }
 }
+.project-page-scroll {
+  container: project-detail / inline-size;
+}
 .project-page {
   width: 100%;
-  max-width: 920px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 32px 40px 56px;
+  padding: clamp(24px, 3cqw, 40px) clamp(24px, 5cqw, 80px) 56px;
 }
 .project-heading {
   display: grid;
   grid-template-columns: 128px minmax(0, 1fr);
   gap: 30px;
   align-items: center;
-  padding-bottom: 30px;
+  padding-bottom: 8px;
 }
 .project-heading .project-cover {
   padding: 16px 12px 13px 19px;
@@ -600,11 +603,6 @@ body {
   letter-spacing: -0.025em;
   overflow-wrap: anywhere;
 }
-.project-eyebrow {
-  margin: 0 0 9px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
 .project-description {
   margin: 10px 0 0;
   max-width: 480px;
@@ -626,106 +624,67 @@ body {
   margin-top: 20px;
 }
 .project-section {
-  padding: 26px 0;
-  border-top: 1px solid var(--border);
+  margin-top: 32px;
+}
+.project-section + .project-section {
+  margin-top: 44px;
+}
+.project-summary,
+.project-plan {
+  min-width: 0;
+}
+.project-plan {
+  margin-top: 44px;
+}
+/* 页面保持单列；宽屏放大封面，正文仍保留适合阅读的行宽。 */
+@container project-detail (min-width: 1120px) {
+  .project-heading {
+    grid-template-columns: 144px minmax(0, 1fr);
+    gap: 32px;
+  }
+  .project-heading .project-cover {
+    width: 144px;
+  }
+  .project-heading h1 {
+    font-size: 24px;
+  }
 }
 .project-section h2 {
   margin: 0 0 12px;
-  font-size: 13px;
+  color: var(--muted-foreground);
+  font-size: 14px;
   font-weight: 500;
 }
-.project-goal,
-.project-plan-overview {
+.project-goal {
   margin: 0;
   white-space: pre-wrap;
   color: var(--muted-foreground);
   font-size: 13px;
   line-height: 1.85;
 }
-.project-plan-overview {
-  margin-bottom: 14px;
-}
-.project-plan-tree {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 13px;
-}
-.project-plan-tree > li {
-  padding: 9px 0;
-}
-.project-plan-tree > li + li {
-  border-top: 1px solid var(--border);
-}
-.project-plan-tree details > summary {
+.project-plan-branch-heading {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  list-style: none;
-  font-weight: 500;
-}
-.project-plan-tree summary::-webkit-details-marker {
-  display: none;
-}
-.project-plan-tree details > summary::before {
-  content: "›";
-  width: 10px;
-  flex-shrink: 0;
-  color: var(--muted-foreground);
-}
-.project-plan-tree details[open] > summary::before {
-  transform: rotate(90deg);
-}
-.project-plan-tree .project-plan-tree {
-  margin: 10px 0 0 5px;
-  padding-left: 17px;
-  border-left: 1px solid var(--border);
-}
-.project-plan-tree .project-plan-tree > li + li {
-  border-top: 0;
-}
-.project-plan-leaf {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.project-node-icon {
-  padding-top: 3px;
-  color: var(--muted-foreground);
-}
-.project-node-icon svg {
-  width: 13px;
-  height: 13px;
-}
-.project-node-body {
-  min-width: 0;
-  flex: 1;
-}
-.project-node-row {
-  display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
   align-items: baseline;
-}
-.project-node-title {
+  gap: 4px 12px;
   min-width: 0;
-  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: left;
 }
-.project-node-status {
-  flex-shrink: 0;
-  margin-left: auto;
+.project-plan-status-icon {
   color: var(--muted-foreground);
-  font-size: 11px;
+}
+.project-plan-status-icon[data-status="completed"] {
+  color: var(--status-completed);
+}
+.project-plan-status-icon[data-status="in_progress"] {
+  color: var(--status-in-progress);
+}
+.project-plan-branch-description {
   font-weight: 400;
-}
-.project-node-description {
-  margin: 5px 0 0;
-  color: var(--muted-foreground);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.7;
-}
-details > .project-node-description {
-  margin-left: 18px;
+  color: var(--muted-foreground);
 }
 .project-activities {
   list-style: none;
