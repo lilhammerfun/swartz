@@ -78,9 +78,15 @@ export function LibrarySidebar({
               ).map((item) => (
                 <SidebarMenuItem key={item.scale}>
                   <SidebarMenuButton
-                    isActive={location.scale === item.scale}
+                    isActive={
+                      location.scale === item.scale ||
+                      (item.scale === "library" && location.scale === "project")
+                    }
                     aria-current={
-                      location.scale === item.scale ? "page" : undefined
+                      location.scale === item.scale ||
+                      (item.scale === "library" && location.scale === "project")
+                        ? "page"
+                        : undefined
                     }
                     onClick={() => navigate({ scale: item.scale })}
                     className="h-7 px-3 text-[13px]"

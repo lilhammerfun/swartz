@@ -27,10 +27,16 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { IconButton } from "@/components/ui/IconButton";
 import { LibrarySidebar } from "@/features/library/LibrarySidebar";
 import { LibraryPage } from "@/features/library/LibraryPage";
-import { NewBookDialog } from "@/features/library/NewBookDialog";
-import { useLibrary } from "@/features/library/useLibrary";
-import { EmptyBook } from "@/features/reader/EmptyBook";
 import { HomePage } from "@/features/home/HomePage";
+import { SettingsPage } from "@/features/settings/SettingsPage";
+import { EmptyBook } from "@/features/reader/EmptyBook";
+import { ProjectPage } from "@/features/projects/ProjectPage";
+import { useLibrary } from "@/features/library/useLibrary";
+import { useProjects } from "@/features/projects/useProjects";
+import {
+  projectBook,
+  type ProjectDetail,
+} from "@/features/projects/project-data";
 import { ReaderSplit } from "@/features/reader/ReaderSplit";
 import { SessionPanel } from "@/features/chat/SessionPanel";
 import { useSessionPanel } from "@/features/chat/useSessionPanel";
@@ -52,7 +58,6 @@ import {
 } from "@/features/home/recent-learning";
 import { SidebarReopenButton } from "./SidebarReopenButton";
 import type { AnnotationSelection } from "@/features/annotations/annotation-selection";
-import { SettingsPage } from "@/features/settings/SettingsPage";
 import {
   defaultModelSettings,
   modelIsConfigured,
@@ -101,10 +106,20 @@ function loadRecent() {
 
 export default function App() {
   const storedLibrary = useLibrary(starterBook);
+  const projects = useProjects();
   const integrations = useBookIntegrations();
+  // Project 的详情进入现有阅读器；保留旧书数据以兼容原有会话和引用。
+  const projectBooks = projects.projects.map((project) =>
+    projectBook(project, projects.details[project.id]),
+  );
   const library = {
     ...storedLibrary,
-    books: storedLibrary.books.map(integrations.project),
+    books: [
+      ...storedLibrary.books.filter(
+        (item) => !projects.projects.some((project) => project.id === item.id),
+      ),
+      ...projectBooks,
+    ].map(integrations.project),
   };
   const storedChat = useChat();
   const chat = {
@@ -121,7 +136,8 @@ export default function App() {
   };
   const [recent, setRecent] = useState(loadRecent);
   const [location, setLocation] = useState<ReaderLocation>({ scale: "home" });
-  const [newBookOpen, setNewBookOpen] = useState(false);
+  const [history, setHistory] = useState<ReaderLocation[]>([]);
+  const [future, setFuture] = useState<ReaderLocation[]>([]);
   const [undoNotices, setUndoNotices] = useState<UndoNotice[]>([]);
   const [sessionPanelWidth, setSessionPanelWidth] = useState<number>();
   const [sessionToolbar, setSessionToolbar] = useState<HTMLDivElement | null>(
@@ -176,8 +192,6 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
-  const [history, setHistory] = useState<ReaderLocation[]>([]);
-  const [future, setFuture] = useState<ReaderLocation[]>([]);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentBookLocation =
     location.scale === "section" || location.scale === "book"
@@ -303,7 +317,7 @@ export default function App() {
     setActiveAnnotation(null);
     setSearchOpen(false);
   };
-  const openBook = (target: LearningBook) => {
+  const navigateToBook = (target: LearningBook) => {
     const previous = readingLocations.current[target.id];
     if (
       previous?.scale === "book" ||
@@ -328,6 +342,34 @@ export default function App() {
           }
         : { scale: "book", bookId: target.id },
     );
+  };
+  const openBook = (target: LearningBook) => {
+    const project = projects.projects.find((item) => item.id === target.id);
+    if (!project) return navigateToBook(target);
+    const cached = projects.getCached(project.id);
+    if (cached)
+      return navigateToBook(integrations.project(projectBook(project, cached)));
+    const origin = locationRef.current;
+    void projects
+      .loadDetail(project.id)
+      .then((detail) => {
+        // 读取期间用户已切换页面时，不让晚到响应把页面拉回。
+        if (locationRef.current === origin)
+          navigateToBook(integrations.project(projectBook(project, detail)));
+      })
+      .catch(() =>
+        showNotice("Could not open this project. Please try again."),
+      );
+  };
+  const startProject = (detail: ProjectDetail) => {
+    const target = integrations.project(projectBook(detail.project, detail));
+    const sessionId = chat.startSession(target);
+    if (!sessionId)
+      throw new Error(
+        "Could not open the learning session. Check local storage and try again.",
+      );
+    navigateToBook(target);
+    panel.openSession(sessionId, target.id);
   };
   const openSavedConversation = (id: string) => {
     const session = chat.getSession(id);
@@ -630,7 +672,9 @@ export default function App() {
         location={location}
         onNavigate={navigate}
         onSearch={() => setSearchOpen(true)}
-        showContents={location.scale !== "chat" || !!chatSession?.bookId}
+        showContents={
+          inBook || (location.scale === "chat" && !!chatSession?.bookId)
+        }
       />
       <SidebarInset
         className="reader-workspace"
@@ -662,14 +706,18 @@ export default function App() {
             >
               <ArrowRight />
             </IconButton>
-            {(inBook || chatSession) && (
+            {(inBook || chatSession || location.scale === "project") && (
               <div className="app-breadcrumb ml-2 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
                 <span className="truncate">
-                  {chatSession
-                    ? chatSession.bookId
-                      ? book.title
-                      : chatSession.title
-                    : book.title}
+                  {location.scale === "project"
+                    ? projects.projects.find(
+                        (project) => project.id === location.projectId,
+                      )?.title
+                    : chatSession
+                      ? chatSession.bookId
+                        ? book.title
+                        : chatSession.title
+                      : book.title}
                 </span>
                 {location.scale === "section" && chapter && (
                   <>
@@ -694,10 +742,10 @@ export default function App() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setNewBookOpen(true)}
+                onClick={() => navigate({ scale: "home" })}
               >
                 <Plus />
-                New book
+                New project
               </Button>
             )}
             {location.scale === "chat" && chatSession?.bookId && (
@@ -820,7 +868,25 @@ export default function App() {
               </section>
             )
           ) : location.scale === "library" ? (
-            <LibraryPage books={library.books} onOpen={openBook} />
+            <LibraryPage
+              projects={projects.projects}
+              sections={projects.sections}
+              saving={projects.saving}
+              onChange={projects.updateLibrary}
+              loading={projects.loading}
+              error={projects.error}
+              onRetry={projects.retry}
+              onOpen={(project) =>
+                navigate({ scale: "project", projectId: project.id })
+              }
+            />
+          ) : location.scale === "project" ? (
+            <ProjectPage
+              key={location.projectId}
+              projectId={location.projectId}
+              loadProject={projects.loadDetail}
+              onStart={startProject}
+            />
           ) : location.scale === "settings" ? (
             <SettingsPage
               settings={modelSettings}
@@ -865,15 +931,6 @@ export default function App() {
             current.filter((notice) => notice.id !== id),
           )
         }
-      />
-      <NewBookDialog
-        open={newBookOpen}
-        onOpenChange={setNewBookOpen}
-        onCreate={(title) => {
-          const created = library.createBook(title);
-          navigate({ scale: "book", bookId: created.id });
-          setNewBookOpen(false);
-        }}
       />
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
         <DialogContent className="gap-4 sm:max-w-xl">

@@ -171,7 +171,8 @@ body {
   grid-template-columns: minmax(0, 1fr);
 }
 .document-scroll,
-.library-page-scroll {
+.library-page-scroll,
+.project-page-scroll {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
@@ -365,9 +366,430 @@ body {
   margin: 0;
 }
 .library-page {
-  max-width: 900px;
+  max-width: 1080px;
   margin: 0 auto;
-  padding: 24px 40px;
+  padding: 32px 40px 56px;
+}
+
+/* 书架只展示书封；书名和简介不再重复放在封面下方。 */
+.library-bookshelf {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 52px 36px;
+  align-items: start;
+}
+.library-book {
+  display: block;
+  width: 100%;
+  max-width: 180px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.library-book:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 7px;
+}
+.project-cover {
+  --cover-paper: #efede7;
+  --cover-ink: #393a34;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  padding: 22px 18px 18px 24px;
+  overflow: hidden;
+  border-radius: 2px 5px 5px 2px;
+  background: var(--cover-paper);
+  color: var(--cover-ink);
+  box-shadow:
+    2px 5px 9px -3px #00000016,
+    7px 11px 17px -10px #00000016;
+  transition: box-shadow 120ms ease-out;
+}
+.project-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 9px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--cover-ink) 13%, transparent),
+    transparent 50%,
+    color-mix(in srgb, var(--cover-ink) 7%, transparent) 75%,
+    transparent
+  );
+}
+.project-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--cover-ink) 6%, transparent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.project-cover-imprint {
+  position: relative;
+  z-index: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 9px;
+  opacity: 0.7;
+}
+.project-cover-title {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 25px;
+  font-family: "Source Serif 4", "Songti SC", SimSun, Georgia, serif;
+  font-size: clamp(19px, 18cqw, 27px);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.project-cover-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding-top: 16px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+.project-cover-art {
+  position: absolute;
+  width: 108px;
+  height: 108px;
+  right: -19px;
+  bottom: 42px;
+  border: 1px solid color-mix(in srgb, var(--cover-ink) 27%, transparent);
+  border-radius: 50%;
+}
+.project-cover-art::before,
+.project-cover-art::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid color-mix(in srgb, var(--cover-ink) 22%, transparent);
+  border-radius: inherit;
+}
+.project-cover-art::after {
+  inset: 26px;
+}
+.project-cover-1 {
+  --cover-paper: #41483f;
+  --cover-ink: #f3f0e6;
+}
+.project-cover-1 .project-cover-art {
+  border-radius: 0;
+  transform: rotate(45deg);
+  right: -30px;
+}
+.project-cover-2 {
+  --cover-paper: #e6e8e7;
+}
+.project-cover-2 .project-cover-art {
+  width: 120px;
+  height: 120px;
+  border: 0;
+  border-radius: 0;
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--cover-ink) 13%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--cover-ink) 13%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 15px 15px;
+}
+.project-cover-2 .project-cover-art::before,
+.project-cover-2 .project-cover-art::after {
+  display: none;
+}
+.project-cover-3 {
+  --cover-paper: #e8e1d8;
+}
+.project-cover-3 .project-cover-art {
+  border-radius: 0;
+  height: 84px;
+  width: 120px;
+  transform: rotate(-12deg);
+}
+.project-cover-4 {
+  --cover-paper: #eeeae3;
+}
+.project-cover-4 .project-cover-art {
+  width: 90px;
+  height: 90px;
+  right: 13px;
+}
+.project-cover-5 {
+  --cover-paper: #dfe4e8;
+}
+.project-cover-5 .project-cover-art {
+  border-radius: 0;
+  transform: rotate(45deg);
+  right: -30px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .library-book:hover .project-cover {
+    box-shadow:
+      2px 6px 10px -3px #00000016,
+      7px 12px 18px -10px #00000016;
+  }
+}
+.project-page {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 32px 40px 56px;
+}
+.project-heading {
+  display: grid;
+  grid-template-columns: 128px minmax(0, 1fr);
+  gap: 30px;
+  align-items: center;
+  padding-bottom: 30px;
+}
+.project-heading .project-cover {
+  padding: 16px 12px 13px 19px;
+}
+.project-heading .project-cover-title {
+  margin-top: 18px;
+  font-size: clamp(17px, 18cqw, 23px);
+}
+.project-heading .project-cover-imprint {
+  font-size: 8px;
+}
+.project-heading .project-cover-footer {
+  font-size: 8px;
+}
+.project-heading h1 {
+  margin: 0;
+  font-size: 27px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+.project-eyebrow {
+  margin: 0 0 9px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.project-description {
+  margin: 10px 0 0;
+  max-width: 480px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted-foreground);
+}
+.project-start {
+  margin-top: 20px;
+}
+.project-section {
+  padding: 26px 0;
+  border-top: 1px solid var(--border);
+}
+.project-section h2 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.project-goal,
+.project-plan-overview {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.85;
+}
+.project-plan-overview {
+  margin-bottom: 14px;
+}
+.project-plan-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.project-plan-tree > li {
+  padding: 9px 0;
+}
+.project-plan-tree > li + li {
+  border-top: 1px solid var(--border);
+}
+.project-plan-tree details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+}
+.project-plan-tree summary::-webkit-details-marker {
+  display: none;
+}
+.project-plan-tree details > summary::before {
+  content: "›";
+  width: 10px;
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+.project-plan-tree details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.project-plan-tree .project-plan-tree {
+  margin: 10px 0 0 5px;
+  padding-left: 17px;
+  border-left: 1px solid var(--border);
+}
+.project-plan-tree .project-plan-tree > li + li {
+  border-top: 0;
+}
+.project-plan-leaf {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.project-node-icon {
+  padding-top: 3px;
+  color: var(--muted-foreground);
+}
+.project-node-icon svg {
+  width: 13px;
+  height: 13px;
+}
+.project-node-body {
+  min-width: 0;
+  flex: 1;
+}
+.project-node-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.project-node-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.project-node-status {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 400;
+}
+.project-node-description {
+  margin: 5px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.7;
+}
+details > .project-node-description {
+  margin-left: 18px;
+}
+.project-activities {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.project-activities li {
+  position: relative;
+  padding: 0 0 24px 23px;
+  font-size: 13px;
+}
+.project-activities li::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(
+    in oklch,
+    var(--muted-foreground) 65%,
+    var(--background)
+  );
+}
+.project-activities li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 17px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.project-activities p {
+  margin: 0;
+}
+.project-activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  margin-top: 4px;
+}
+.project-empty {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.8;
+}
+@container reader (max-width: 840px) {
+  .library-bookshelf {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container reader (max-width: 580px) {
+  .library-page,
+  .project-page {
+    padding: 25px 24px 40px;
+  }
+  .library-bookshelf {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px 26px;
+  }
+  .project-cover {
+    padding: 16px 13px 13px 19px;
+  }
+  .project-cover-title {
+    font-size: clamp(17px, 18cqw, 24px);
+  }
+  .project-heading {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 20px;
+  }
+  .project-heading h1 {
+    font-size: 22px;
+  }
+  .project-heading .project-cover-imprint {
+    display: none;
+  }
+  .project-heading .project-cover-title {
+    font-size: clamp(15px, 18cqw, 20px);
+    margin-top: 8px;
+  }
+  .project-heading .project-cover-footer {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-cover {
+    transition: none;
+  }
 }
 .notice-toast {
   position: fixed;
@@ -690,4 +1112,39 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* 分区是书架的组织层，项目菜单独立于封面按钮，保留键盘可达性。 */
+.library-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+.library-section {
+  position: relative;
+  margin-bottom: 44px;
+}
+.library-section-title {
+  cursor: pointer;
+  padding: 4px 40px 20px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+.library-section-menu {
+  position: absolute;
+  top: -2px;
+  right: 0;
+}
+.library-book-item {
+  position: relative;
+  min-width: 0;
+  max-width: 180px;
+  padding-bottom: 30px;
+}
+.library-book-menu {
+  position: absolute;
+  bottom: -2px;
+  right: -4px;
+  color: var(--muted-foreground);
 }

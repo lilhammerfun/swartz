@@ -1,0 +1,115 @@
+[
+  {
+    "project": {
+      "id": "project-backend-interview",
+      "title": "后端面试准备",
+      "description": "围绕后端机制与取舍展开讨论，形成自己的系统性教材。"
+    },
+    "goal": {
+      "projectId": "project-backend-interview",
+      "version": 1,
+      "content": "准备后端面试，能够解释主要机制、分析取舍，并通过对话沉淀自己的 textbook。"
+    },
+    "plan": {
+      "projectId": "project-backend-interview",
+      "version": 3,
+      "overview": "先从数据库的具体问题展开，再联系缓存与并发场景；顺序可以随讨论调整。",
+      "nodes": [
+        {
+          "id": "mysql",
+          "title": "MySQL",
+          "description": "围绕数据访问与并发问题探索数据库机制。",
+          "status": null,
+          "children": [
+            {
+              "id": "index",
+              "title": "索引与查询",
+              "description": "从查询示例讨论索引如何影响数据访问。",
+              "status": "completed",
+              "children": []
+            },
+            {
+              "id": "transaction",
+              "title": "事务与隔离",
+              "description": "从并发读写的例子讨论隔离与实现机制。",
+              "status": "in_progress",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "redis",
+          "title": "Redis",
+          "description": "结合具体使用场景讨论缓存。",
+          "status": null,
+          "children": [
+            {
+              "id": "cache-consistency",
+              "title": "缓存一致性",
+              "description": "讨论缓存与数据库更新时可能出现的问题。",
+              "status": "pending",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "textbook": {
+      "id": "textbook-backend",
+      "projectId": "project-backend-interview",
+      "title": "我的后端知识笔记",
+      "subtitle": "从具体问题整理出的解释与联系",
+      "version": 1,
+      "chapters": [
+        {
+          "id": "database",
+          "title": "数据库",
+          "purpose": "整理已经讨论并确认沉淀的内容。",
+          "sections": [
+            {
+              "id": "index-query",
+              "title": "从查询理解索引",
+              "subtitle": "",
+              "paragraphs": [
+                {
+                  "id": "index-example",
+                  "text": "讨论索引时，先明确具体查询需要访问哪些数据，再比较不同访问方式。",
+                  "kind": "prose"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "activities": [
+      {
+        "id": "activity-goal",
+        "projectId": "project-backend-interview",
+        "kind": "goal_updated",
+        "description": "确定以解释后端机制与取舍为目标。",
+        "occurredAt": "2026-10-25T01:00:00Z",
+        "sessionId": "session-backend-1",
+        "toolCallId": "call-update-goal"
+      },
+      {
+        "id": "activity-plan",
+        "projectId": "project-backend-interview",
+        "kind": "plan_updated",
+        "description": "将事务与隔离设为当前探索内容。",
+        "occurredAt": "2026-10-25T01:10:00Z",
+        "sessionId": "session-backend-1",
+        "toolCallId": "call-update-plan"
+      },
+      {
+        "id": "activity-textbook",
+        "projectId": "project-backend-interview",
+        "kind": "textbook_revised",
+        "description": "将已讨论的索引解释整理进教材。",
+        "occurredAt": "2026-10-25T01:20:00Z",
+        "sessionId": "session-backend-1",
+        "toolCallId": "call-update-textbook"
+      }
+    ]
+  }
+]

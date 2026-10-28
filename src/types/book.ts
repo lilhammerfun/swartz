@@ -62,6 +62,7 @@ export interface Annotation {
 export type ReaderLocation =
   | { scale: "home" }
   | { scale: "library" }
+  | { scale: "project"; projectId: string }
   | { scale: "settings" }
   | { scale: "chat"; conversationId: string }
   | { scale: "book"; bookId: string }

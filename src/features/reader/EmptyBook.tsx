@@ -10,6 +10,10 @@ export function EmptyBook({ book }: { book: LearningBook }) {
             {book.title}
           </h1>
         </header>
+        <p className="document-prose text-muted-foreground">
+          Your textbook will take shape as you explore. Start a conversation
+          with your agent.
+        </p>
       </article>
     </ScrollArea>
   );
