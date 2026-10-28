@@ -383,3 +383,76 @@ fn dangling_section_references_and_duplicate_sections_are_rejected() {
     library.write(&data.to_string());
     assert!(library.store().library().is_err());
 }
+
+#[test]
+fn batch_move_validates_every_project_before_saving() {
+    use super::data::LibraryChange;
+    let library = TestLibrary::new();
+    library.write(include_str!("../../../src/mock-data/projects.json"));
+    let store = library.store();
+    store
+        .update(LibraryChange::CreateSection {
+            id: "systems".into(),
+            name: "Systems".into(),
+        })
+        .unwrap();
+    let before = fs::read(&library.path).unwrap();
+    let ids: Vec<_> = store
+        .list()
+        .unwrap()
+        .iter()
+        .take(2)
+        .map(|p| p.id.clone())
+        .collect();
+    for invalid in [
+        vec![ids[0].clone(), "missing".into()],
+        vec![],
+        vec![ids[0].clone(), ids[0].clone()],
+    ] {
+        assert!(
+            store
+                .update(LibraryChange::MoveProjects {
+                    project_ids: invalid,
+                    section_id: Some("systems".into())
+                })
+                .is_err()
+        );
+        assert_eq!(fs::read(&library.path).unwrap(), before);
+    }
+    assert!(
+        store
+            .update(LibraryChange::MoveProjects {
+                project_ids: ids.clone(),
+                section_id: Some("missing".into())
+            })
+            .is_err()
+    );
+    assert_eq!(fs::read(&library.path).unwrap(), before);
+    store
+        .update(LibraryChange::MoveProjects {
+            project_ids: ids.clone(),
+            section_id: Some("systems".into()),
+        })
+        .unwrap();
+    assert!(
+        store
+            .list()
+            .unwrap()
+            .iter()
+            .filter(|p| ids.contains(&p.id))
+            .all(|p| p.library_section_id.as_deref() == Some("systems"))
+    );
+    store
+        .update(LibraryChange::DeleteSection {
+            id: "systems".into(),
+        })
+        .unwrap();
+    assert_eq!(store.list().unwrap().len(), 6);
+    assert!(
+        store
+            .list()
+            .unwrap()
+            .iter()
+            .all(|p| p.library_section_id.is_none())
+    );
+}

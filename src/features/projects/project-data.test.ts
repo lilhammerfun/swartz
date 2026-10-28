@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   projectBook,
+  orderRecentProjects,
   recentActivities,
   type ProjectDetail,
 } from "./project-data.ts";
@@ -41,4 +42,25 @@ test("the activity feed displays newest facts first without changing the stored 
   assert.equal(sorted[0].kind, "textbook_revised");
   assert.equal(sorted.at(-1)!.kind, "goal_updated");
   assert.deepEqual(activities, before);
+});
+
+test("Recent keeps assigned and unvisited projects while ordering by latest use", () => {
+  const projects = details.map((item) => ({ ...item.project }));
+  projects[1].librarySectionId = "systems";
+  const before = structuredClone(projects);
+  const ordered = orderRecentProjects(projects, [
+    { bookId: projects[1].id, updatedAt: "2026-10-28T08:00:00Z" },
+    { bookId: projects[2].id, updatedAt: "2026-10-27T08:00:00Z" },
+    { bookId: projects[1].id, updatedAt: "2026-10-26T08:00:00Z" },
+  ]);
+  assert.deepEqual(
+    ordered.map((item) => item.id),
+    [
+      projects[1].id,
+      projects[2].id,
+      projects[0].id,
+      ...projects.slice(3).map((item) => item.id),
+    ],
+  );
+  assert.deepEqual(projects, before);
 });

@@ -109,14 +109,40 @@ impl ProjectStore {
                 }
                 data.sections.retain(|s| s.id != id);
             }
+            LibraryChange::MoveProjects {
+                project_ids,
+                section_id,
+            } => {
+                let ids: HashSet<_> = project_ids.iter().collect();
+                if ids.is_empty() || ids.len() != project_ids.len() {
+                    return Err("Select one or more distinct projects.".into());
+                }
+                if section_id
+                    .as_ref()
+                    .is_some_and(|id| !data.sections.iter().any(|s| &s.id == id))
+                {
+                    return Err("This section could not be found.".into());
+                }
+                if ids
+                    .iter()
+                    .any(|id| !data.projects.iter().any(|d| &d.project.id == *id))
+                {
+                    return Err("This project could not be found.".into());
+                }
+                for detail in &mut data.projects {
+                    if ids.contains(&detail.project.id) {
+                        detail.project.library_section_id = section_id.clone();
+                    }
+                }
+            }
             LibraryChange::MoveProject {
                 project_id,
                 section_id,
             } => {
-                if let Some(id) = &section_id {
-                    if !data.sections.iter().any(|s| &s.id == id) {
-                        return Err("This section could not be found.".into());
-                    }
+                if let Some(id) = &section_id
+                    && !data.sections.iter().any(|s| &s.id == id)
+                {
+                    return Err("This section could not be found.".into());
                 }
                 let detail = data
                     .projects
@@ -268,10 +294,10 @@ fn validate_library(data: &LibraryData) -> Result<(), String> {
         }
     }
     for detail in &data.projects {
-        if let Some(id) = &detail.project.library_section_id {
-            if !ids.contains(id) {
-                return Err(invalid_library());
-            }
+        if let Some(id) = &detail.project.library_section_id
+            && !ids.contains(id)
+        {
+            return Err(invalid_library());
         }
     }
     validate(&data.projects)

@@ -22,7 +22,8 @@ export type LibraryChange =
   | { kind: "create_section"; id: string; name: string }
   | { kind: "rename_section"; id: string; name: string }
   | { kind: "delete_section"; id: string }
-  | { kind: "move_project"; projectId: string; sectionId: string | null };
+  | { kind: "move_project"; projectId: string; sectionId: string | null }
+  | { kind: "move_projects"; projectIds: string[]; sectionId: string | null };
 
 export type ExplorationStatus = "pending" | "in_progress" | "completed";
 
@@ -87,5 +88,26 @@ export function recentActivities(
 ): ProjectActivity[] {
   return [...activities].sort(
     (a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt),
+  );
+}
+
+/** 最近使用的项目在前；未访问的项目保持目录顺序，不因分区归属而消失。 */
+export function orderRecentProjects(
+  projects: readonly Project[],
+  recent: readonly { bookId?: string; updatedAt: string }[],
+): Project[] {
+  const times = new Map<string, number>();
+  for (const entry of recent) {
+    if (entry.bookId)
+      times.set(
+        entry.bookId,
+        Math.max(
+          times.get(entry.bookId) ?? 0,
+          Date.parse(entry.updatedAt) || 0,
+        ),
+      );
+  }
+  return [...projects].sort(
+    (a, b) => (times.get(b.id) ?? 0) - (times.get(a.id) ?? 0),
   );
 }

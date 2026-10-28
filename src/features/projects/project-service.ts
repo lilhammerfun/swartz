@@ -39,6 +39,27 @@ export async function updateLibrary(
         if (p.librarySectionId === change.id) p.librarySectionId = null;
       });
       break;
+    case "move_projects": {
+      if (
+        !change.projectIds.length ||
+        new Set(change.projectIds).size !== change.projectIds.length
+      )
+        throw new Error("Select one or more distinct projects.");
+      if (
+        change.sectionId !== null &&
+        !library.sections.some((s) => s.id === change.sectionId)
+      )
+        throw new Error("This section could not be found.");
+      const selected = change.projectIds.map((id) => {
+        const project = library.projects.find((p) => p.id === id);
+        if (!project) throw new Error("This project could not be found.");
+        return project;
+      });
+      selected.forEach((project) => {
+        project.librarySectionId = change.sectionId;
+      });
+      break;
+    }
     case "move_project": {
       const project = library.projects.find((p) => p.id === change.projectId);
       if (!project) throw new Error("This project could not be found.");

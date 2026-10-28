@@ -52,6 +52,13 @@ pub enum LibraryChange {
     DeleteSection {
         id: String,
     },
+    /// 整批移动一次提交；任何项目失效时整批都不写入。
+    MoveProjects {
+        #[serde(rename = "projectIds")]
+        project_ids: Vec<String>,
+        #[serde(rename = "sectionId")]
+        section_id: Option<String>,
+    },
     MoveProject {
         #[serde(rename = "projectId")]
         project_id: String,
