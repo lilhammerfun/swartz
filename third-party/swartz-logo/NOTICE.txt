@@ -1,0 +1,25 @@
+Swartz portrait logo — source photograph attribution
+
+Original photograph: "Aaron Swartz profile.jpg"
+Photographer: Fred Benenson / www.fredbenenson.com
+Photographer website: https://www.fredbenenson.com/
+Date: 13 December 2008
+Source: https://commons.wikimedia.org/wiki/File:Aaron_Swartz_profile.jpg
+Original Flickr source: https://www.flickr.com/photos/creativecommons/3111021669/
+
+The source photograph is licensed under Creative Commons Attribution 2.0 Generic
+(CC BY 2.0): https://creativecommons.org/licenses/by/2.0/
+Legal code: https://creativecommons.org/licenses/by/2.0/legalcode
+
+Changes made for the Swartz logo: cropped to the head, removed the background,
+converted to black and white, and adapted into vector portrait shapes.
+
+The source photograph's CC BY 2.0 license and attribution requirements remain
+applicable to the underlying photographic material. The repository's general
+software license does not replace the photograph's license.
+
+Swartz is an independent project. Use of this portrait does not imply endorsement
+by the photographer, Aaron Swartz, or his estate.
+
+This notice records the source photograph's copyright license. It does not grant
+separate personality, publicity, privacy, moral, or trademark rights.

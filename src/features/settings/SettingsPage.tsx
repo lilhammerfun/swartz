@@ -32,6 +32,48 @@ export function SettingsPage({
             onSave={onSave}
           />
         </section>
+        <section aria-labelledby="settings-about-title" className="mt-10">
+          <h2
+            id="settings-about-title"
+            className="text-sm font-medium text-foreground"
+          >
+            About Swartz
+          </h2>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            The logo adapts{" "}
+            <a
+              href="https://commons.wikimedia.org/wiki/File:Aaron_Swartz_profile.jpg"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              Aaron Swartz profile.jpg
+            </a>{" "}
+            by{" "}
+            <a
+              href="https://www.fredbenenson.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              Fred Benenson
+            </a>
+            . The source photograph is licensed under{" "}
+            <a
+              href="https://creativecommons.org/licenses/by/2.0/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              CC BY 2.0
+            </a>
+            .
+          </p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            Cropped, converted to black and white, and redrawn as a portrait
+            mark. Swartz is an independent project; no endorsement is implied.
+          </p>
+        </section>
       </section>
     </ScrollArea>
   );

@@ -14,7 +14,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="swartz-client" content="book-reader" />
-        <link rel="icon" href="/swartz.svg" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
         <title>Swartz</title>
         <Meta />
         <Links />

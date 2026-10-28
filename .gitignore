@@ -30,3 +30,7 @@ dist-ssr
 
 # Generated route types
 .react-router/
+
+# Local worktrees and logo design drafts
+.worktrees/
+design/logo/

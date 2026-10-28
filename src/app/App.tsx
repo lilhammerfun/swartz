@@ -114,6 +114,7 @@ export default function App() {
     null,
   );
   const [selectingProjects, setSelectingProjects] = useState(false);
+  const [revealGettingStarted, setRevealGettingStarted] = useState(false);
   const revalidator = useRevalidator();
   const routerLocation = useLocation();
   const routerNavigate = useNavigate();
@@ -691,6 +692,7 @@ export default function App() {
       selecting: selectingProjects,
       onSelectingChange: setSelectingProjects,
       onSectionAction: setSectionAction,
+      onSearch: () => setSearchOpen(true),
       onOpen: (project) =>
         navigate({ scale: "project", projectId: project.id }),
     },
@@ -741,7 +743,8 @@ export default function App() {
       style={{ "--sidebar-width": "256px" } as React.CSSProperties}
     >
       <LibrarySidebar
-        footer={
+        onGettingStarted={() => setRevealGettingStarted(true)}
+        gettingStarted={
           <GettingStarted
             configured={configured}
             projects={projects.projects}
@@ -749,18 +752,13 @@ export default function App() {
             loading={projects.loading}
             loadDetail={projects.loadDetail}
             onNavigate={navigate}
+            reveal={revealGettingStarted}
+            onRevealHandled={() => setRevealGettingStarted(false)}
           />
         }
         book={book}
-        onNewProject={() => navigate({ scale: "home" })}
-        onNewSection={() => setSectionAction({ kind: "create" })}
-        onSelectProjects={() => {
-          setSelectingProjects(true);
-          if (location.scale !== "library") void routerNavigate("/library");
-        }}
         location={location}
         onNavigate={navigate}
-        onSearch={() => setSearchOpen(true)}
         showContents={
           inBook || (location.scale === "chat" && !!chatSession?.bookId)
         }

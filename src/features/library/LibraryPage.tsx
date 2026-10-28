@@ -1,6 +1,14 @@
 import { useState } from "react";
-import { Check, ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  MoreHorizontal,
+  Plus,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -32,6 +40,7 @@ export function LibraryPage({
   recent,
   showAll = false,
   onSectionAction,
+  onSearch,
 }: {
   projects: readonly Project[];
   sections: readonly LibrarySection[];
@@ -43,6 +52,7 @@ export function LibraryPage({
   sectionId?: string | null;
   showAll?: boolean;
   onSectionAction: (action: SectionAction) => void;
+  onSearch: () => void;
   recent: readonly { bookId?: string; updatedAt: string }[];
 }) {
   const [selected, setSelected] = useState<string[]>([]);
@@ -127,9 +137,13 @@ export function LibraryPage({
   return (
     <section className="library-page-scroll" aria-label="Library">
       <div className="library-page">
-        {selecting && (
-          <div className="library-view-header">
-            <div className="flex flex-wrap items-center justify-end gap-2">
+        <header className="library-page-header">
+          <div className="library-page-heading">
+            <h1>Library</h1>
+            <p>Your projects, organized in one place.</p>
+          </div>
+          {selecting ? (
+            <div className="library-selection-tools">
               <span className="text-xs text-muted-foreground" role="status">
                 {ids.length} selected
               </span>
@@ -194,8 +208,60 @@ export function LibraryPage({
                 Done
               </Button>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="library-page-tools">
+              <Button
+                variant="outline"
+                className="library-search-trigger justify-start gap-2"
+                aria-label="Search library"
+                aria-haspopup="dialog"
+                aria-keyshortcuts="Control+K Meta+K"
+                onClick={onSearch}
+              >
+                <Search data-icon="inline-start" />
+                <span className="min-w-0 flex-1 truncate text-left font-normal text-muted-foreground">
+                  Search library…
+                </span>
+                <Kbd
+                  className="hidden text-foreground sm:inline-flex"
+                  aria-hidden
+                >
+                  {/Mac/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}
+                </Kbd>
+              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <IconButton label="Library options" disabled={saving}>
+                      <MoreHorizontal />
+                    </IconButton>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        onSelect={() => onSectionAction({ kind: "create" })}
+                      >
+                        New section
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={!projects.length}
+                        onSelect={() => onSelectingChange(true)}
+                      >
+                        Select projects
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button asChild size="sm">
+                  <Link to="/">
+                    <Plus data-icon="inline-start" />
+                    New project
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
+        </header>
         {error && (
           <p role="alert" className="mb-4 text-sm text-destructive">
             {error}
@@ -233,7 +299,8 @@ export function LibraryPage({
                     <DropdownMenuTrigger asChild>
                       <IconButton
                         label={`Section options: ${group.name}`}
-                        className="rounded-full"
+                        variant="link"
+                        className="rounded-full text-muted-foreground hover:text-foreground"
                         disabled={saving}
                       >
                         <MoreHorizontal />

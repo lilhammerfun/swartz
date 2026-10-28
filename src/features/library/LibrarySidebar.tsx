@@ -1,14 +1,22 @@
 import { useState, type ReactNode } from "react";
 import {
   ChevronRight,
+  ChevronsUpDown,
   Home,
   Library,
+  ListChecks,
   Settings,
-  MoreHorizontal,
+  UserRound,
 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/IconButton";
-import { Kbd } from "@/components/ui/kbd";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,43 +32,28 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuAction,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuGroup,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import type { LearningBook, ReaderLocation } from "@/types/book";
 
 export function LibrarySidebar({
   book,
   location,
   onNavigate,
-  onSearch,
   showContents = true,
-  onNewProject,
-  onNewSection,
-  onSelectProjects,
-  footer,
+  onGettingStarted,
+  gettingStarted,
 }: {
   book: LearningBook;
   location: ReaderLocation;
   onNavigate: (location: ReaderLocation) => void;
-  onSearch: () => void;
   showContents?: boolean;
-  onNewProject: () => void;
-  onNewSection: () => void;
-  onSelectProjects: () => void;
-  footer?: ReactNode;
+  onGettingStarted: () => void;
+  gettingStarted?: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(["ownership", "borrowing"]);
   const { isMobile, setOpenMobile } = useSidebar();
@@ -75,33 +68,16 @@ export function LibrarySidebar({
       aria-label="Library navigation"
     >
       <SidebarHeader className="flex-row items-center gap-1.5 px-2 pt-3 pb-0">
-        <Button
-          variant="outline"
-          className="sidebar-search h-8 min-w-0 flex-1 justify-start gap-2 px-2.5 text-muted-foreground shadow-none"
-          aria-label="Search"
-          onClick={() => {
-            if (isMobile) setOpenMobile(false);
-            onSearch();
-          }}
-        >
-          <span className="flex-1 text-left text-xs font-normal">Search</span>
-          <Kbd className="text-[10px]">
-            {/Mac/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}
-          </Kbd>
-        </Button>
-        <IconButton
-          label="Settings"
-          aria-current={location.scale === "settings" ? "page" : undefined}
-          onClick={() => navigate({ scale: "settings" })}
-        >
-          <Settings
-            className={
-              location.scale === "settings"
-                ? "text-foreground"
-                : "text-muted-foreground"
-            }
+        <div className="sidebar-brand flex h-10 min-w-0 flex-1 items-center gap-2.5 px-2">
+          <img
+            src="/logo.svg"
+            alt=""
+            width="32"
+            height="32"
+            className="sidebar-brand-mark size-8 shrink-0"
           />
-        </IconButton>
+          <span className="text-lg font-semibold tracking-tight">swartz</span>
+        </div>
       </SidebarHeader>
       <SidebarContent className="gap-5 px-2 py-3">
         <SidebarGroup className="p-0">
@@ -132,47 +108,6 @@ export function LibrarySidebar({
                     <item.icon className="text-muted-foreground" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
-                  {item.scale === "library" && (
-                    <>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <SidebarMenuAction
-                            className="rounded-full"
-                            showOnHover
-                            aria-label="Library options"
-                          >
-                            <MoreHorizontal />
-                          </SidebarMenuAction>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuGroup>
-                            <DropdownMenuItem
-                              onSelect={() => {
-                                onNewProject();
-                                if (isMobile) setOpenMobile(false);
-                              }}
-                            >
-                              New project
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={onNewSection}>
-                              New section
-                            </DropdownMenuItem>
-                          </DropdownMenuGroup>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuGroup>
-                            <DropdownMenuItem
-                              onSelect={() => {
-                                onSelectProjects();
-                                if (isMobile) setOpenMobile(false);
-                              }}
-                            >
-                              Select projects
-                            </DropdownMenuItem>
-                          </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </>
-                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -246,7 +181,53 @@ export function LibrarySidebar({
           </SidebarGroup>
         )}
       </SidebarContent>
-      {footer && <SidebarFooter className="p-3">{footer}</SidebarFooter>}
+      <SidebarFooter className="gap-3 p-3">
+        {gettingStarted}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-auto w-full justify-start gap-3 px-2 py-2 text-left"
+              aria-label="Open profile menu"
+            >
+              <Avatar>
+                <AvatarFallback>
+                  <UserRound aria-hidden="true" />
+                </AvatarFallback>
+              </Avatar>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span>You</span>
+                <span className="truncate text-xs font-normal text-muted-foreground">
+                  Personal workspace
+                </span>
+              </span>
+              <ChevronsUpDown
+                data-icon="inline-end"
+                className="text-muted-foreground"
+              />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            side="top"
+            sideOffset={8}
+            className="w-56"
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                onSelect={() => navigate({ scale: "settings" })}
+              >
+                <Settings />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onGettingStarted}>
+                <ListChecks />
+                Getting started
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }

@@ -11,10 +11,17 @@ const PREVIEW_KEY = "swartz.library-preview.v1";
 export async function getLibrary(): Promise<LibrarySnapshot> {
   if (isTauri()) return invoke("get_library");
   const details = await previewProjects();
+  const fixture = await previewFixture();
+  const { mergePreviewLibrary } =
+    await import("../../mock-data/library-preview");
   const saved = localStorage.getItem(PREVIEW_KEY);
-  return saved
-    ? JSON.parse(saved)
-    : { sections: [], projects: details.map((d) => d.project) };
+  const library = mergePreviewLibrary(saved ? JSON.parse(saved) : null, {
+    fixtureRevision: fixture.revision,
+    sections: fixture.sections,
+    projects: details.map((detail) => detail.project),
+  });
+  localStorage.setItem(PREVIEW_KEY, JSON.stringify(library));
+  return library;
 }
 
 export async function updateLibrary(
@@ -73,8 +80,27 @@ export async function updateLibrary(
 async function previewProjects(): Promise<ProjectDetail[]> {
   // 只在开发浏览器里加载 fixture；正式桌面始终通过 Rust 读取项目。
   if (import.meta.env.DEV) {
-    return (await import("../../mock-data/projects.json"))
+    const base = (await import("../../mock-data/projects.json"))
       .default as ProjectDetail[];
+    const fixture = await previewFixture();
+    const assignments = fixture.assignments as Record<string, string>;
+    return [
+      ...base.map((detail) => ({
+        ...detail,
+        project: {
+          ...detail.project,
+          librarySectionId: assignments[detail.project.id],
+        },
+      })),
+      ...(fixture.projects as ProjectDetail[]),
+    ];
+  }
+  throw new Error("Open the desktop app to access your projects.");
+}
+
+async function previewFixture() {
+  if (import.meta.env.DEV) {
+    return (await import("../../mock-data/library.json")).default;
   }
   throw new Error("Open the desktop app to access your projects.");
 }

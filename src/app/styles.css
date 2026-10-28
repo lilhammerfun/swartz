@@ -175,8 +175,8 @@ body {
   min-height: 48px;
   padding: 0 20px;
 }
-.sidebar-search {
-  background: var(--surface);
+.dark .sidebar-brand-mark {
+  filter: invert(1);
 }
 .reading-split {
   flex: 1;
@@ -1095,19 +1095,64 @@ body {
   }
 }
 
-/* 分区管理属于侧栏；书架只在显式选择模式显示操作。 */
-.library-view-header {
+/* 页头集中展示搜索和管理操作，选择模式复用同一操作区。 */
+.library-page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 28px;
+  gap: 24px;
+  margin-bottom: 36px;
 }
-.library-view-header h1 {
-  font-size: 14px;
-  font-weight: 500;
+.library-page-heading {
+  min-width: 0;
+}
+.library-page-heading h1 {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+.library-page-heading p {
+  margin: 8px 0 0;
   color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.library-page-tools {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.library-search-trigger {
+  width: 240px;
+}
+.library-selection-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@container reader (max-width: 900px) {
+  .library-page-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .library-page-tools {
+    width: 100%;
+  }
+  .library-search-trigger {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+  .library-selection-tools {
+    justify-content: flex-start;
+  }
 }
 .library-selection-check {
   position: absolute;
@@ -1158,16 +1203,16 @@ body {
   font-size: 14px;
   font-weight: 500;
 }
-.library-bookshelf-preview > :nth-child(n + 5) {
+.library-bookshelf-preview > :nth-child(n + 9) {
   display: none;
 }
 @container reader (max-width: 840px) {
-  .library-bookshelf-preview > :nth-child(n + 4) {
+  .library-bookshelf-preview > :nth-child(n + 7) {
     display: none;
   }
 }
 @container reader (max-width: 580px) {
-  .library-bookshelf-preview > :nth-child(n + 3) {
+  .library-bookshelf-preview > :nth-child(n + 5) {
     display: none;
   }
 }

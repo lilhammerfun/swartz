@@ -1,0 +1,981 @@
+{
+  "revision": 1,
+  "sections": [
+    {
+      "id": "preview-systems",
+      "name": "计算与系统"
+    },
+    {
+      "id": "preview-mathematics",
+      "name": "数学与推理"
+    },
+    {
+      "id": "preview-humanities",
+      "name": "人文与表达"
+    }
+  ],
+  "assignments": {
+    "project-backend-interview": "preview-systems",
+    "rust-memory": "preview-systems",
+    "project-language-models": "preview-systems",
+    "project-database-design": "preview-systems",
+    "project-network": "preview-systems",
+    "project-probability": "preview-mathematics"
+  },
+  "projects": [
+    {
+      "project": {
+        "id": "project-operating-systems",
+        "title": "操作系统的内在逻辑",
+        "description": "从进程、虚拟内存与文件系统理解程序如何运行。",
+        "librarySectionId": "preview-systems"
+      },
+      "goal": {
+        "projectId": "project-operating-systems",
+        "version": 1,
+        "content": "从进程、虚拟内存与文件系统理解程序如何运行。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-operating-systems",
+        "version": 1,
+        "overview": "从进程、虚拟内存与文件系统理解程序如何运行。",
+        "nodes": [
+          {
+            "id": "operating-systems-1",
+            "title": "进程与调度",
+            "description": "沿一次上下文切换理解调度策略与并发。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "operating-systems-2",
+            "title": "虚拟内存",
+            "description": "从页表、缺页与缓存解释内存访问。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "operating-systems-3",
+            "title": "文件与 I/O",
+            "description": "比较文件系统、页缓存和设备访问路径。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-operating-systems-plan",
+          "projectId": "project-operating-systems",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-10T08:00:00Z",
+          "sessionId": "project-operating-systems-session",
+          "toolCallId": "project-operating-systems-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-distributed-systems",
+        "title": "分布式系统",
+        "description": "从故障、时序与一致性出发，理解多节点协作。",
+        "librarySectionId": "preview-systems"
+      },
+      "goal": {
+        "projectId": "project-distributed-systems",
+        "version": 1,
+        "content": "从故障、时序与一致性出发，理解多节点协作。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-distributed-systems",
+        "version": 1,
+        "overview": "从故障、时序与一致性出发，理解多节点协作。",
+        "nodes": [
+          {
+            "id": "distributed-systems-1",
+            "title": "时间与故障",
+            "description": "用消息延迟和节点故障分析系统边界。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "distributed-systems-2",
+            "title": "复制与共识",
+            "description": "比较主从复制、仲裁与共识协议。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "distributed-systems-3",
+            "title": "一致性取舍",
+            "description": "在实际业务约束下选择一致性模型。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-distributed-systems-plan",
+          "projectId": "project-distributed-systems",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-11T08:00:00Z",
+          "sessionId": "project-distributed-systems-session",
+          "toolCallId": "project-distributed-systems-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-computer-architecture",
+        "title": "计算机是如何工作的",
+        "description": "沿一条指令连接逻辑电路、处理器与内存。",
+        "librarySectionId": "preview-systems"
+      },
+      "goal": {
+        "projectId": "project-computer-architecture",
+        "version": 1,
+        "content": "沿一条指令连接逻辑电路、处理器与内存。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-computer-architecture",
+        "version": 1,
+        "overview": "沿一条指令连接逻辑电路、处理器与内存。",
+        "nodes": [
+          {
+            "id": "computer-architecture-1",
+            "title": "从逻辑门到指令",
+            "description": "构建最小运算与控制单元的概念模型。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "computer-architecture-2",
+            "title": "流水线与并行",
+            "description": "分析指令流水线及其冲突。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "computer-architecture-3",
+            "title": "内存层次",
+            "description": "用局部性解释缓存、主存与存储。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-computer-architecture-plan",
+          "projectId": "project-computer-architecture",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-12T08:00:00Z",
+          "sessionId": "project-computer-architecture-session",
+          "toolCallId": "project-computer-architecture-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-linear-algebra",
+        "title": "线性代数的几何直觉",
+        "description": "把向量、矩阵和特征值还原为可观察的空间变换。",
+        "librarySectionId": "preview-mathematics"
+      },
+      "goal": {
+        "projectId": "project-linear-algebra",
+        "version": 1,
+        "content": "把向量、矩阵和特征值还原为可观察的空间变换。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-linear-algebra",
+        "version": 1,
+        "overview": "把向量、矩阵和特征值还原为可观察的空间变换。",
+        "nodes": [
+          {
+            "id": "linear-algebra-1",
+            "title": "向量与线性空间",
+            "description": "用基、维度和线性组合描述空间。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "linear-algebra-2",
+            "title": "矩阵与变换",
+            "description": "连接矩阵乘法、投影和坐标变换。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "linear-algebra-3",
+            "title": "特征值与分解",
+            "description": "通过方向保持性理解特征向量与分解。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-linear-algebra-plan",
+          "projectId": "project-linear-algebra",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-13T08:00:00Z",
+          "sessionId": "project-linear-algebra-session",
+          "toolCallId": "project-linear-algebra-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-calculus",
+        "title": "变化的数学",
+        "description": "从变化率与累积量理解微积分的统一结构。",
+        "librarySectionId": "preview-mathematics"
+      },
+      "goal": {
+        "projectId": "project-calculus",
+        "version": 1,
+        "content": "从变化率与累积量理解微积分的统一结构。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-calculus",
+        "version": 1,
+        "overview": "从变化率与累积量理解微积分的统一结构。",
+        "nodes": [
+          {
+            "id": "calculus-1",
+            "title": "极限与连续",
+            "description": "用局部逼近建立极限的直觉。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "calculus-2",
+            "title": "导数与局部变化",
+            "description": "从切线连接变化率、微分和近似。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "calculus-3",
+            "title": "积分与累积",
+            "description": "解释积分、面积与微积分基本定理。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-calculus-plan",
+          "projectId": "project-calculus",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-14T08:00:00Z",
+          "sessionId": "project-calculus-session",
+          "toolCallId": "project-calculus-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-statistical-inference",
+        "title": "从数据到结论",
+        "description": "理解抽样、估计与检验如何支撑可靠推断。",
+        "librarySectionId": "preview-mathematics"
+      },
+      "goal": {
+        "projectId": "project-statistical-inference",
+        "version": 1,
+        "content": "理解抽样、估计与检验如何支撑可靠推断。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-statistical-inference",
+        "version": 1,
+        "overview": "理解抽样、估计与检验如何支撑可靠推断。",
+        "nodes": [
+          {
+            "id": "statistical-inference-1",
+            "title": "抽样与偏差",
+            "description": "区分样本、总体与选择偏差。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "statistical-inference-2",
+            "title": "估计与区间",
+            "description": "比较点估计、不确定性与置信区间。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "statistical-inference-3",
+            "title": "检验与实验",
+            "description": "用实验设计分析假设检验的边界。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-statistical-inference-plan",
+          "projectId": "project-statistical-inference",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-15T08:00:00Z",
+          "sessionId": "project-statistical-inference-session",
+          "toolCallId": "project-statistical-inference-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-bayesian-thinking",
+        "title": "贝叶斯思维",
+        "description": "把先验、证据与更新应用到日常判断。",
+        "librarySectionId": "preview-mathematics"
+      },
+      "goal": {
+        "projectId": "project-bayesian-thinking",
+        "version": 1,
+        "content": "把先验、证据与更新应用到日常判断。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-bayesian-thinking",
+        "version": 1,
+        "overview": "把先验、证据与更新应用到日常判断。",
+        "nodes": [
+          {
+            "id": "bayesian-thinking-1",
+            "title": "条件概率",
+            "description": "从联合分布与条件化理解证据。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "bayesian-thinking-2",
+            "title": "先验与后验",
+            "description": "用具体案例计算信念更新。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "bayesian-thinking-3",
+            "title": "决策与损失",
+            "description": "结合不确定性和代价选择行动。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-bayesian-thinking-plan",
+          "projectId": "project-bayesian-thinking",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-16T08:00:00Z",
+          "sessionId": "project-bayesian-thinking-session",
+          "toolCallId": "project-bayesian-thinking-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-graph-theory",
+        "title": "图论与连接",
+        "description": "从路径、网络与关系理解离散结构。",
+        "librarySectionId": "preview-mathematics"
+      },
+      "goal": {
+        "projectId": "project-graph-theory",
+        "version": 1,
+        "content": "从路径、网络与关系理解离散结构。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-graph-theory",
+        "version": 1,
+        "overview": "从路径、网络与关系理解离散结构。",
+        "nodes": [
+          {
+            "id": "graph-theory-1",
+            "title": "图的基本结构",
+            "description": "连接度数、连通性与树。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "graph-theory-2",
+            "title": "路径与搜索",
+            "description": "比较遍历、最短路与生成树。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "graph-theory-3",
+            "title": "网络与匹配",
+            "description": "通过网络流和匹配解释资源分配。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-graph-theory-plan",
+          "projectId": "project-graph-theory",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-17T08:00:00Z",
+          "sessionId": "project-graph-theory-session",
+          "toolCallId": "project-graph-theory-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-optimization",
+        "title": "寻找最优解",
+        "description": "从几何、约束与梯度理解最优化方法。",
+        "librarySectionId": "preview-mathematics"
+      },
+      "goal": {
+        "projectId": "project-optimization",
+        "version": 1,
+        "content": "从几何、约束与梯度理解最优化方法。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-optimization",
+        "version": 1,
+        "overview": "从几何、约束与梯度理解最优化方法。",
+        "nodes": [
+          {
+            "id": "optimization-1",
+            "title": "目标与约束",
+            "description": "将实际问题写成优化目标与可行域。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "optimization-2",
+            "title": "梯度与迭代",
+            "description": "比较梯度下降、步长和收敛行为。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "optimization-3",
+            "title": "凸性与对偶",
+            "description": "用凸性理解最优性与对偶关系。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-optimization-plan",
+          "projectId": "project-optimization",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-18T08:00:00Z",
+          "sessionId": "project-optimization-session",
+          "toolCallId": "project-optimization-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-information-theory",
+        "title": "信息、压缩与编码",
+        "description": "从不确定性出发理解信息的度量与传递。",
+        "librarySectionId": "preview-mathematics"
+      },
+      "goal": {
+        "projectId": "project-information-theory",
+        "version": 1,
+        "content": "从不确定性出发理解信息的度量与传递。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-information-theory",
+        "version": 1,
+        "overview": "从不确定性出发理解信息的度量与传递。",
+        "nodes": [
+          {
+            "id": "information-theory-1",
+            "title": "信息与熵",
+            "description": "用概率分布解释信息量和熵。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "information-theory-2",
+            "title": "压缩与编码",
+            "description": "比较无损压缩与编码长度。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "information-theory-3",
+            "title": "信道与噪声",
+            "description": "连接互信息、信道容量和纠错。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-information-theory-plan",
+          "projectId": "project-information-theory",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-19T08:00:00Z",
+          "sessionId": "project-information-theory-session",
+          "toolCallId": "project-information-theory-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-cognitive-science",
+        "title": "心智如何运作",
+        "description": "连接感知、记忆、注意与学习，理解认知过程。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-cognitive-science",
+        "version": 1,
+        "content": "连接感知、记忆、注意与学习，理解认知过程。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-cognitive-science",
+        "version": 1,
+        "overview": "连接感知、记忆、注意与学习，理解认知过程。",
+        "nodes": [
+          {
+            "id": "cognitive-science-1",
+            "title": "感知与注意",
+            "description": "分析信息选择和感知推断。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "cognitive-science-2",
+            "title": "记忆与学习",
+            "description": "比较工作记忆、长期记忆与提取练习。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "cognitive-science-3",
+            "title": "推理与偏差",
+            "description": "用实验案例检验直觉与判断。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-cognitive-science-plan",
+          "projectId": "project-cognitive-science",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-20T08:00:00Z",
+          "sessionId": "project-cognitive-science-session",
+          "toolCallId": "project-cognitive-science-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-philosophy-of-science",
+        "title": "科学如何解释世界",
+        "description": "围绕证据、解释与可证伪性讨论科学知识。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-philosophy-of-science",
+        "version": 1,
+        "content": "围绕证据、解释与可证伪性讨论科学知识。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-philosophy-of-science",
+        "version": 1,
+        "overview": "围绕证据、解释与可证伪性讨论科学知识。",
+        "nodes": [
+          {
+            "id": "philosophy-of-science-1",
+            "title": "观察与理论",
+            "description": "理解观察如何受到概念和理论影响。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "philosophy-of-science-2",
+            "title": "解释与证据",
+            "description": "比较因果解释、预测和证据支持。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "philosophy-of-science-3",
+            "title": "理论的演进",
+            "description": "通过科学史案例讨论理论更替。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-philosophy-of-science-plan",
+          "projectId": "project-philosophy-of-science",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-21T08:00:00Z",
+          "sessionId": "project-philosophy-of-science-session",
+          "toolCallId": "project-philosophy-of-science-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-economics",
+        "title": "选择与激励",
+        "description": "从稀缺、机会成本与制度理解经济行为。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-economics",
+        "version": 1,
+        "content": "从稀缺、机会成本与制度理解经济行为。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-economics",
+        "version": 1,
+        "overview": "从稀缺、机会成本与制度理解经济行为。",
+        "nodes": [
+          {
+            "id": "economics-1",
+            "title": "选择与机会成本",
+            "description": "用边际分析解释个体选择。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "economics-2",
+            "title": "价格与市场",
+            "description": "连接供需、信息和市场均衡。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "economics-3",
+            "title": "制度与激励",
+            "description": "分析外部性、契约和公共品。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-economics-plan",
+          "projectId": "project-economics",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-22T08:00:00Z",
+          "sessionId": "project-economics-session",
+          "toolCallId": "project-economics-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-world-history",
+        "title": "世界历史的连接",
+        "description": "沿贸易、迁徙与技术观察社会之间的联系。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-world-history",
+        "version": 1,
+        "content": "沿贸易、迁徙与技术观察社会之间的联系。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-world-history",
+        "version": 1,
+        "overview": "沿贸易、迁徙与技术观察社会之间的联系。",
+        "nodes": [
+          {
+            "id": "world-history-1",
+            "title": "交流与迁徙",
+            "description": "通过跨区域网络理解人口与知识流动。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "world-history-2",
+            "title": "制度与社会",
+            "description": "比较国家、城市和社会组织的变化。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "world-history-3",
+            "title": "技术与转型",
+            "description": "讨论技术扩散与社会变迁的关系。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-world-history-plan",
+          "projectId": "project-world-history",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-23T08:00:00Z",
+          "sessionId": "project-world-history-session",
+          "toolCallId": "project-world-history-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-writing",
+        "title": "把想法写清楚",
+        "description": "用结构、论据与修订把复杂想法转化为清晰表达。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-writing",
+        "version": 1,
+        "content": "用结构、论据与修订把复杂想法转化为清晰表达。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-writing",
+        "version": 1,
+        "overview": "用结构、论据与修订把复杂想法转化为清晰表达。",
+        "nodes": [
+          {
+            "id": "writing-1",
+            "title": "从问题到结构",
+            "description": "确定读者、核心问题与文章主张。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "writing-2",
+            "title": "论据与叙述",
+            "description": "组织例子、证据和段落推进。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "writing-3",
+            "title": "修订与打磨",
+            "description": "通过删改和反馈检验表达效果。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-writing-plan",
+          "projectId": "project-writing",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-24T08:00:00Z",
+          "sessionId": "project-writing-session",
+          "toolCallId": "project-writing-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-design",
+        "title": "设计中的秩序",
+        "description": "从视觉层级、版式和交互理解设计如何服务目的。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-design",
+        "version": 1,
+        "content": "从视觉层级、版式和交互理解设计如何服务目的。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-design",
+        "version": 1,
+        "overview": "从视觉层级、版式和交互理解设计如何服务目的。",
+        "nodes": [
+          {
+            "id": "design-1",
+            "title": "视觉层级",
+            "description": "用大小、间距和对比建立阅读顺序。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "design-2",
+            "title": "版式与节奏",
+            "description": "比较网格、对齐和留白的作用。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "design-3",
+            "title": "交互与反馈",
+            "description": "围绕任务检验状态、反馈与可用性。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-design-plan",
+          "projectId": "project-design",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-10T08:00:00Z",
+          "sessionId": "project-design-session",
+          "toolCallId": "project-design-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-music",
+        "title": "听懂音乐",
+        "description": "从节奏、旋律与和声理解音乐的组织方式。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-music",
+        "version": 1,
+        "content": "从节奏、旋律与和声理解音乐的组织方式。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-music",
+        "version": 1,
+        "overview": "从节奏、旋律与和声理解音乐的组织方式。",
+        "nodes": [
+          {
+            "id": "music-1",
+            "title": "节奏与旋律",
+            "description": "通过听辨建立拍子、动机与乐句的概念。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "music-2",
+            "title": "和声与调性",
+            "description": "连接和弦、张力与调性运动。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "music-3",
+            "title": "形式与聆听",
+            "description": "结合曲式与配器练习结构化聆听。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-music-plan",
+          "projectId": "project-music",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-11T08:00:00Z",
+          "sessionId": "project-music-session",
+          "toolCallId": "project-music-update-plan"
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "project-reasoning",
+        "title": "逻辑与论证",
+        "description": "辨认前提、结论与推理方式，练习构造可靠论证。",
+        "librarySectionId": "preview-humanities"
+      },
+      "goal": {
+        "projectId": "project-reasoning",
+        "version": 1,
+        "content": "辨认前提、结论与推理方式，练习构造可靠论证。通过讨论和案例，逐步形成自己的解释与学习笔记。"
+      },
+      "plan": {
+        "projectId": "project-reasoning",
+        "version": 1,
+        "overview": "辨认前提、结论与推理方式，练习构造可靠论证。",
+        "nodes": [
+          {
+            "id": "reasoning-1",
+            "title": "命题与推理",
+            "description": "区分有效性、真实性与推理形式。",
+            "status": "in_progress",
+            "children": []
+          },
+          {
+            "id": "reasoning-2",
+            "title": "论证与反例",
+            "description": "识别隐含前提并构造反例。",
+            "status": "pending",
+            "children": []
+          },
+          {
+            "id": "reasoning-3",
+            "title": "判断与讨论",
+            "description": "在真实讨论中检验解释与证据。",
+            "status": "pending",
+            "children": []
+          }
+        ]
+      },
+      "textbook": null,
+      "activities": [
+        {
+          "id": "project-reasoning-plan",
+          "projectId": "project-reasoning",
+          "kind": "plan_updated",
+          "description": "建立探索计划，准备从第一个问题开始。",
+          "occurredAt": "2026-10-12T08:00:00Z",
+          "sessionId": "project-reasoning-session",
+          "toolCallId": "project-reasoning-update-plan"
+        }
+      ]
+    }
+  ]
+}

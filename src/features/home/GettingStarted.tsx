@@ -52,6 +52,8 @@ export function GettingStarted({
   loading,
   loadDetail,
   onNavigate,
+  reveal = false,
+  onRevealHandled,
 }: {
   configured: boolean;
   projects: Project[];
@@ -59,6 +61,8 @@ export function GettingStarted({
   loading: boolean;
   loadDetail: (id: string) => Promise<ProjectDetail>;
   onNavigate: (location: ReaderLocation) => void;
+  reveal?: boolean;
+  onRevealHandled?: () => void;
 }) {
   const [preferences, setPreferences] = useState(loadPreferences);
   const [scanned, setScanned] = useState<ProjectDetail[]>([]);
@@ -66,6 +70,17 @@ export function GettingStarted({
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const { isMobile, setOpenMobile } = useSidebar();
+  useEffect(() => {
+    if (!reveal) return;
+    const next = { hidden: false, open: true };
+    setPreferences(next);
+    try {
+      localStorage.setItem(preferenceKey, JSON.stringify(next));
+    } catch {
+      /* 偏好写入失败时仍然显示引导。 */
+    }
+    onRevealHandled?.();
+  }, [reveal, onRevealHandled]);
   const chapterExists = (detail: ProjectDetail) =>
     detail.textbook?.chapters.some((chapter) =>
       chapter.sections.some((section) =>
@@ -148,13 +163,6 @@ export function GettingStarted({
   ];
   const completed = steps.filter((step) => step.done).length;
   const allDone = completed === steps.length;
-  const [wasComplete, setWasComplete] = useState(false);
-  useEffect(() => {
-    if (allDone && !wasComplete)
-      setPreferences((current) => ({ ...current, open: false }));
-    setWasComplete(allDone);
-  }, [allDone, wasComplete]);
-
   const updatePreferences = (next: Preferences) => {
     setPreferences(next);
     try {
@@ -164,16 +172,7 @@ export function GettingStarted({
     }
   };
   if (loading || !ready) return null;
-  if (preferences.hidden)
-    return (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => updatePreferences({ hidden: false, open: true })}
-      >
-        Getting started
-      </Button>
-    );
+  if (preferences.hidden) return null;
   return (
     <Collapsible
       open={preferences.open ?? !allDone}
@@ -182,16 +181,18 @@ export function GettingStarted({
     >
       <Card size="sm" aria-label="Getting started" className="gap-1">
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="min-w-0">
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-auto min-h-7 justify-start gap-2 px-0 text-left"
+                className="h-auto min-h-7 w-full min-w-0 justify-start gap-2 px-1 text-left"
               >
-                <span>Getting started</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  {completed} of {steps.length}
+                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 text-left">
+                  <span>Getting started</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {completed} of {steps.length}
+                  </span>
                 </span>
                 <ChevronDown
                   data-icon="inline-end"

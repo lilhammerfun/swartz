@@ -1,3 +1,7 @@
+<p>
+  <img src="public/logo.png" alt="Swartz 标志" width="96" height="96" />
+</p>
+
 # Swartz
 
 [English](README.md) · 简体中文
@@ -24,3 +28,5 @@ pnpm desktop
 ## 许可证
 
 [PolyForm Noncommercial 1.0.0](LICENSE)。第三方组件与字体的许可证见 [third-party](third-party/)。
+
+头像 Logo 改编自 Fred Benenson 的照片，原照片采用 [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) 许可。详见 [Logo 署名说明](third-party/swartz-logo/NOTICE.txt)。
