@@ -1,4 +1,15 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import {
+  Outlet,
+  useLocation,
+  useMatches,
+  useNavigate,
+  useNavigation,
+  useNavigationType,
+} from "react-router";
+import { locationPath, type ReaderRouteHandle } from "./route-location";
+import type { AppRouteContext } from "./app-route-context";
+import { RouteLoading } from "./RouteFeedback";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
@@ -26,11 +37,6 @@ import { Input } from "@/components/ui/input";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { IconButton } from "@/components/ui/IconButton";
 import { LibrarySidebar } from "@/features/library/LibrarySidebar";
-import { LibraryPage } from "@/features/library/LibraryPage";
-import { HomePage } from "@/features/home/HomePage";
-import { SettingsPage } from "@/features/settings/SettingsPage";
-import { EmptyBook } from "@/features/reader/EmptyBook";
-import { ProjectPage } from "@/features/projects/ProjectPage";
 import { useLibrary } from "@/features/library/useLibrary";
 import { useProjects } from "@/features/projects/useProjects";
 import {
@@ -86,12 +92,6 @@ const ChatPage = lazy(() =>
   })),
 );
 
-const ReadingDocument = lazy(() =>
-  import("@/features/reader/ReadingDocument").then((module) => ({
-    default: module.ReadingDocument,
-  })),
-);
-
 function loadRecent() {
   try {
     return { entries: loadRecentLearning(localStorage), error: "" };
@@ -105,6 +105,49 @@ function loadRecent() {
 }
 
 export default function App() {
+  const routerLocation = useLocation();
+  const routerNavigate = useNavigate();
+  const navigation = useNavigation();
+  const navigationType = useNavigationType();
+  const matches = useMatches();
+  // 继续兼容旧阅读位置数据；页面匹配来自 Router 的实际匹配结果。
+  const location = useMemo<ReaderLocation>(() => {
+    const match = [...matches]
+      .reverse()
+      .find(
+        (match) =>
+          (match.handle as ReaderRouteHandle | undefined)?.readerLocation,
+      );
+    return match
+      ? (match.handle as ReaderRouteHandle).readerLocation(match.params)
+      : { scale: "home" };
+    // 数据重验证不改变页面位置，保留异步操作用于判定用户是否已离开的身份。
+  }, [routerLocation.pathname]);
+  const routeBook = matches
+    .map(
+      (match) =>
+        (match.loaderData as { book?: LearningBook } | undefined)?.book,
+    )
+    .find(Boolean);
+  const historyIndex =
+    typeof window.history.state?.idx === "number"
+      ? (window.history.state.idx as number)
+      : 0;
+  // 只跟踪标题栏按钮可用性；实际历史、跳转和 POP 行为由 Router 管理。
+  const [lastHistoryIndex, setLastHistoryIndex] = useState(historyIndex);
+  useEffect(() => {
+    // POP 导航等待 loader 时，浏览器索引已改变，Router 的旧页面尚未提交。
+    // 只在 location 提交后更新按钮边界，不能把等待期间的索引当作新的 PUSH。
+    const committedIndex =
+      typeof window.history.state?.idx === "number"
+        ? (window.history.state.idx as number)
+        : 0;
+    setLastHistoryIndex((current) =>
+      navigationType === "PUSH"
+        ? committedIndex
+        : Math.max(current, committedIndex),
+    );
+  }, [routerLocation.key, navigationType]);
   const storedLibrary = useLibrary(starterBook);
   const projects = useProjects();
   const integrations = useBookIntegrations();
@@ -119,7 +162,17 @@ export default function App() {
         (item) => !projects.projects.some((project) => project.id === item.id),
       ),
       ...projectBooks,
-    ].map(integrations.project),
+    ]
+      .concat(
+        routeBook &&
+          !storedLibrary.books.some((item) => item.id === routeBook.id) &&
+          !projects.projects.some((item) => item.id === routeBook.id)
+          ? [routeBook]
+          : [],
+      )
+      .map((item) =>
+        integrations.project(routeBook?.id === item.id ? routeBook : item),
+      ),
   };
   const storedChat = useChat();
   const chat = {
@@ -135,9 +188,6 @@ export default function App() {
     },
   };
   const [recent, setRecent] = useState(loadRecent);
-  const [location, setLocation] = useState<ReaderLocation>({ scale: "home" });
-  const [history, setHistory] = useState<ReaderLocation[]>([]);
-  const [future, setFuture] = useState<ReaderLocation[]>([]);
   const [undoNotices, setUndoNotices] = useState<UndoNotice[]>([]);
   const [sessionPanelWidth, setSessionPanelWidth] = useState<number>();
   const [sessionToolbar, setSessionToolbar] = useState<HTMLDivElement | null>(
@@ -311,9 +361,7 @@ export default function App() {
     return () => document.removeEventListener("keydown", handler);
   }, []);
   const navigate = (next: ReaderLocation) => {
-    setHistory((items) => [...items, location]);
-    setFuture([]);
-    setLocation(next);
+    void routerNavigate(locationPath(next));
     setActiveAnnotation(null);
     setSearchOpen(false);
   };
@@ -447,17 +495,7 @@ export default function App() {
     return !!id;
   };
   const moveHistory = (direction: "back" | "forward") => {
-    const source = direction === "back" ? history : future;
-    const target = source.at(-1);
-    if (!target) return;
-    if (direction === "back") {
-      setHistory(source.slice(0, -1));
-      setFuture((items) => [...items, location]);
-    } else {
-      setFuture(source.slice(0, -1));
-      setHistory((items) => [...items, location]);
-    }
-    setLocation(target);
+    void routerNavigate(direction === "back" ? -1 : 1);
     setActiveAnnotation(null);
   };
   const attachPassage = (sessionId: string, anchor: AnnotationAnchor) => {
@@ -550,7 +588,7 @@ export default function App() {
     }
   };
   const renderConversation = (session: ChatSession) => (
-    <Suspense fallback={null}>
+    <Suspense fallback={<RouteLoading />}>
       <ChatPage
         key={session.id}
         compact={inBook}
@@ -661,6 +699,73 @@ export default function App() {
       />
     </Suspense>
   );
+  const routeContext: AppRouteContext = {
+    home: {
+      value: chat.homeDraft,
+      onChange: chat.setHomeDraft,
+      attachments: chat.homeAttachments,
+      onAttachmentsChange: chat.setHomeAttachments,
+      settings: modelSettings,
+      pending: false,
+      busy: chat.busy,
+      error: chat.error || recent.error || undefined,
+      onSettings: () => navigate({ scale: "settings" }),
+      onConfigure: () => navigate({ scale: "settings" }),
+      onSend: sendOrdinaryQuestion,
+      recentBooks,
+      onResume: resumeLearning,
+    },
+    library: {
+      projects: projects.projects,
+      sections: projects.sections,
+      saving: projects.saving,
+      onChange: projects.updateLibrary,
+      loading: projects.loading,
+      error: projects.error,
+      onRetry: projects.retry,
+      onOpen: (project) =>
+        navigate({ scale: "project", projectId: project.id }),
+    },
+    project: { onStart: startProject },
+    settings: {
+      settings: modelSettings,
+      loadError: modelLoadError,
+      onSave: saveModel,
+    },
+    conversation: chatSession ? (
+      renderConversation(chatSession)
+    ) : (
+      <RouteLoading />
+    ),
+    book,
+    reader:
+      location.scale === "section" &&
+      chapter?.id === location.chapterId &&
+      section?.id === location.sectionId
+        ? {
+            book,
+            chapter,
+            section,
+            annotations: notes,
+            activeAnnotationId: activeAnnotation,
+            previewAnnotationId: null,
+            annotationFocusRequest,
+            onAskAI: compose,
+            onSelectAnnotation: (id) => {
+              const annotation = notes.find((item) => item.id === id);
+              if (annotation) selectAnnotation(annotation);
+            },
+            onSelectAnnotations: selectAnnotations,
+            onNavigate: (chapterId, sectionId) =>
+              navigate({
+                scale: "section",
+                bookId: book.id,
+                chapterId,
+                sectionId,
+              }),
+          }
+        : null,
+  };
   return (
     <SidebarProvider
       className="desktop-app"
@@ -692,16 +797,21 @@ export default function App() {
         >
           <div className="flex min-w-0 flex-1 items-center gap-1">
             <SidebarReopenButton />
+            {navigation.state !== "idle" && (
+              <span className="route-navigation-status" role="status">
+                Loading…
+              </span>
+            )}
             <IconButton
               label="Go back"
-              disabled={!history.length}
+              disabled={historyIndex === 0}
               onClick={() => moveHistory("back")}
             >
               <ArrowLeft />
             </IconButton>
             <IconButton
               label="Go forward"
-              disabled={!future.length}
+              disabled={historyIndex >= lastHistoryIndex}
               onClick={() => moveHistory("forward")}
             >
               <ArrowRight />
@@ -840,88 +950,7 @@ export default function App() {
             ) : null
           }
         >
-          {location.scale === "home" ? (
-            <HomePage
-              value={chat.homeDraft}
-              onChange={chat.setHomeDraft}
-              attachments={chat.homeAttachments}
-              onAttachmentsChange={chat.setHomeAttachments}
-              settings={modelSettings}
-              pending={false}
-              busy={chat.busy}
-              error={chat.error || recent.error || undefined}
-              onSettings={() => navigate({ scale: "settings" })}
-              onConfigure={() => navigate({ scale: "settings" })}
-              onSend={sendOrdinaryQuestion}
-              recentBooks={recentBooks}
-              onResume={resumeLearning}
-            />
-          ) : location.scale === "chat" ? (
-            chatSession ? (
-              renderConversation(chatSession)
-            ) : (
-              <section
-                className="p-6 text-sm text-muted-foreground"
-                aria-label="Conversation unavailable"
-              >
-                This conversation could not be loaded. Open Home to continue.
-              </section>
-            )
-          ) : location.scale === "library" ? (
-            <LibraryPage
-              projects={projects.projects}
-              sections={projects.sections}
-              saving={projects.saving}
-              onChange={projects.updateLibrary}
-              loading={projects.loading}
-              error={projects.error}
-              onRetry={projects.retry}
-              onOpen={(project) =>
-                navigate({ scale: "project", projectId: project.id })
-              }
-            />
-          ) : location.scale === "project" ? (
-            <ProjectPage
-              key={location.projectId}
-              projectId={location.projectId}
-              loadProject={projects.loadDetail}
-              onStart={startProject}
-            />
-          ) : location.scale === "settings" ? (
-            <SettingsPage
-              settings={modelSettings}
-              loadError={modelLoadError}
-              onSave={saveModel}
-            />
-          ) : location.scale === "book" || !chapter || !section ? (
-            <EmptyBook book={book} />
-          ) : (
-            <Suspense fallback={null}>
-              <ReadingDocument
-                book={book}
-                chapter={chapter}
-                section={section}
-                annotations={notes}
-                activeAnnotationId={activeAnnotation}
-                previewAnnotationId={null}
-                annotationFocusRequest={annotationFocusRequest}
-                onAskAI={compose}
-                onSelectAnnotation={(id) => {
-                  const annotation = notes.find((item) => item.id === id);
-                  if (annotation) selectAnnotation(annotation);
-                }}
-                onSelectAnnotations={selectAnnotations}
-                onNavigate={(chapterId, sectionId) =>
-                  navigate({
-                    scale: "section",
-                    bookId: book.id,
-                    chapterId,
-                    sectionId,
-                  })
-                }
-              />
-            </Suspense>
-          )}
+          <Outlet context={routeContext} />
         </ReaderSplit>
       </SidebarInset>
       <UndoToasts

@@ -133,8 +133,7 @@
 }
 /* Business layout and book typography; controls use the registry components. */
 html,
-body,
-#root {
+body {
   height: 100%;
   margin: 0;
 }
@@ -1147,4 +1146,17 @@ details > .project-node-description {
   bottom: -2px;
   right: -4px;
   color: var(--muted-foreground);
+}
+
+.route-navigation-status {
+  position: absolute;
+  top: 46px;
+  right: 24px;
+  z-index: 20;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  box-shadow: 0 1px 4px #00000010;
 }

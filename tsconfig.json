@@ -16,7 +16,14 @@
     },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "rootDirs": [".", "./.react-router/types"],
+    "types": ["node", "vite/client"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": [
+    "src",
+    "vite.config.ts",
+    "react-router.config.ts",
+    ".react-router/types/**/*"
+  ]
 }

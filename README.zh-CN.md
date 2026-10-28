@@ -15,11 +15,11 @@
 ```sh
 git clone https://github.com/lilhammerfun/swartz.git
 cd swartz
-npm ci
-npm run desktop
+pnpm install --frozen-lockfile
+pnpm desktop
 ```
 
-浏览器预览使用 `npm run dev`。AI 交流需在 Settings 中连接自己的模型服务。
+浏览器预览使用 `pnpm dev`。AI 交流需在 Settings 中连接自己的模型服务。
 
 ## 许可证
 

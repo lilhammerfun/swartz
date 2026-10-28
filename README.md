@@ -10,16 +10,16 @@ A public-benefit project for understanding and sharing knowledge: turning questi
 
 ## Run locally
 
-Requires Node.js 24+, Rust stable, and the [Tauri platform dependencies](https://tauri.app/start/prerequisites/).
+Requires Node.js 24+, pnpm (version pinned in `package.json`), Rust stable, and the [Tauri platform dependencies](https://tauri.app/start/prerequisites/).
 
 ```sh
 git clone https://github.com/lilhammerfun/swartz.git
 cd swartz
-npm ci
-npm run desktop
+pnpm install --frozen-lockfile
+pnpm desktop
 ```
 
-For a browser preview, run `npm run dev`. Connect your own model service in Settings to use AI conversations.
+For a browser preview, run `pnpm dev`. Connect your own model service in Settings to use AI conversations.
 
 ## License
 
