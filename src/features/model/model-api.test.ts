@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { once } from "node:events";
 import {
   normalizeBaseUrl,
+  parseModelAnswer,
   prepareModelConfig,
   requestModel,
 } from "./model-api.ts";
@@ -106,20 +107,38 @@ test("follow-ups include the original quote, chapter purpose, and complete prior
   assert.equal(messages.at(-1)?.content, "Can you show an example?");
 });
 
-test("the real HTTP client sends the configured model and context and parses a protocol fixture", async () => {
+function responseFixture(text: string) {
+  return {
+    id: "resp_fixture",
+    object: "response",
+    model: "test-model",
+    status: "completed",
+    output: [
+      {
+        type: "reasoning",
+        summary: [{ type: "summary_text", text: "Not assistant text." }],
+      },
+      {
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text }],
+      },
+    ],
+  };
+}
+
+test("the HTTP client uses Responses and preserves the model, history and explicit effort", async () => {
   let payload: unknown;
   const server = createServer(async (req, res) => {
     assert.equal(req.method, "POST");
-    assert.equal(req.url, "/v1/chat/completions");
+    assert.equal(req.url, "/v1/responses");
     assert.equal(req.headers.authorization, "Bearer test-only-key");
     let body = "";
     for await (const chunk of req) body += chunk;
     payload = JSON.parse(body);
     res.setHeader("Content-Type", "application/json");
     res.end(
-      JSON.stringify({
-        choices: [{ message: { content: "A local protocol fixture answer." } }],
-      }),
+      JSON.stringify(responseFixture("A local protocol fixture answer.")),
     );
   });
   server.listen(0, "127.0.0.1");
@@ -132,6 +151,20 @@ test("the real HTTP client sends the configured model and context and parses a p
       anchor,
       "Why exclusive access?",
     );
+    messages.push(
+      { role: "assistant", content: "A previous answer." },
+      { role: "user", content: "A follow-up question." },
+    );
+    const input = messages.map((message) => ({
+      type: "message",
+      role: message.role,
+      content: [
+        {
+          type: message.role === "assistant" ? "output_text" : "input_text",
+          text: message.content,
+        },
+      ],
+    }));
     const answer = await requestModel(
       {
         baseUrl: `http://127.0.0.1:${address.port}/v1`,
@@ -141,7 +174,12 @@ test("the real HTTP client sends the configured model and context and parses a p
       messages,
     );
     assert.equal(answer, "A local protocol fixture answer.");
-    assert.deepEqual(payload, { model: "test-model", messages, stream: false });
+    assert.deepEqual(payload, {
+      model: "test-model",
+      input,
+      store: false,
+      stream: false,
+    });
     await requestModel(
       {
         baseUrl: `http://127.0.0.1:${address.port}/v1`,
@@ -149,18 +187,52 @@ test("the real HTTP client sends the configured model and context and parses a p
         apiKey: "test-only-key",
       },
       messages,
-      { model: "selected-model", reasoningEffort: "low" },
+      { model: "selected-model-high", reasoningEffort: "low" },
     );
     assert.deepEqual(payload, {
-      model: "selected-model",
-      messages,
+      model: "selected-model-high",
+      input,
+      store: false,
       stream: false,
-      reasoning_effort: "low",
+      reasoning: { effort: "low", summary: "auto" },
     });
   } finally {
     server.close();
     await once(server, "close");
   }
+});
+
+test("Responses parsing joins assistant text without exposing reasoning or accepting incomplete output", () => {
+  const fixture = responseFixture("First part. ");
+  fixture.output.push({
+    type: "message",
+    role: "assistant",
+    content: [{ type: "output_text", text: "Second part." }],
+  });
+  assert.equal(parseModelAnswer(fixture), "First part. Second part.");
+  for (const status of ["incomplete", "failed", "cancelled"])
+    assert.throws(() => parseModelAnswer({ ...fixture, status }), /incomplete/);
+  assert.throws(() => parseModelAnswer({ output: [] }), /invalid response/);
+  assert.throws(
+    () => parseModelAnswer(responseFixture("")),
+    /returned no text/,
+  );
+  assert.throws(
+    () =>
+      parseModelAnswer({
+        status: "completed",
+        output: [
+          {
+            type: "message",
+            role: "assistant",
+            content: [
+              { type: "refusal", refusal: "Private provider explanation." },
+            ],
+          },
+        ],
+      }),
+    /declined/,
+  );
 });
 
 test("text attachments survive saving and are included in subsequent questions", async () => {
@@ -271,7 +343,7 @@ test("provider failures and empty output preserve the question and do not leak r
     res.statusCode = status;
     res.end(
       status === 200
-        ? JSON.stringify({ choices: [{ message: { content: "" } }] })
+        ? JSON.stringify(responseFixture(""))
         : "provider echoed test-only-secret",
     );
   });

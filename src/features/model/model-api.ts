@@ -87,12 +87,40 @@ export function providerError(status: number): string {
 }
 export function parseModelAnswer(data: unknown): string {
   const body = data as {
-    choices?: { message?: { content?: unknown } }[];
+    status?: unknown;
+    output?: {
+      type?: unknown;
+      role?: unknown;
+      content?: { type?: unknown; text?: unknown }[];
+    }[];
   } | null;
-  const content = body?.choices?.[0]?.message?.content;
-  if (typeof content !== "string" || !content.trim())
+  if (body?.status !== "completed") {
+    if (["failed", "incomplete", "cancelled"].includes(String(body?.status)))
+      throw new Error(
+        "The model response was incomplete. Your question is still here.",
+      );
+    throw new Error("The provider returned an invalid response.");
+  }
+  if (!Array.isArray(body.output))
+    throw new Error("The provider returned an invalid response.");
+  const parts: string[] = [];
+  for (const item of body.output) {
+    if (item?.type !== "message" || item.role !== "assistant") continue;
+    if (!Array.isArray(item.content))
+      throw new Error("The provider returned an invalid response.");
+    for (const block of item.content) {
+      if (block?.type === "refusal")
+        throw new Error("The model declined to answer this request.");
+      if (block?.type !== "output_text") continue;
+      if (typeof block.text !== "string")
+        throw new Error("The provider returned an invalid response.");
+      parts.push(block.text);
+    }
+  }
+  const answer = parts.join("").trim();
+  if (!answer)
     throw new Error("The model returned no text. Your question is still here.");
-  return content.trim();
+  return answer;
 }
 export async function requestModel(
   config: ModelConfig,
@@ -118,7 +146,7 @@ export async function requestModel(
     );
   let response: Response;
   try {
-    response = await fetch(`${base}/chat/completions`, {
+    response = await fetch(`${base}/responses`, {
       method: "POST",
       redirect: "error",
       headers: {
@@ -127,10 +155,20 @@ export async function requestModel(
       },
       body: JSON.stringify({
         model,
-        messages,
+        input: messages.map((message) => ({
+          type: "message",
+          role: message.role,
+          content: [
+            {
+              type: message.role === "assistant" ? "output_text" : "input_text",
+              text: message.content,
+            },
+          ],
+        })),
+        store: false,
         stream: false,
         ...(options.reasoningEffort
-          ? { reasoning_effort: options.reasoningEffort }
+          ? { reasoning: { effort: options.reasoningEffort, summary: "auto" } }
           : {}),
       }),
       signal: AbortSignal.timeout(90000),

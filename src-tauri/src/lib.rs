@@ -4,6 +4,7 @@ mod projects;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(model::ModelState::default())
         .invoke_handler(tauri::generate_handler![
             model::load_model_settings,
             model::save_model_settings,

@@ -86,7 +86,7 @@ export function ModelSettingsForm({
                 id="model-base-url-description"
                 className="text-xs leading-5"
               >
-                Your OpenAI-compatible API endpoint.
+                Requires support for the Responses API.
               </FieldDescription>
             </FieldContent>
             <Input
