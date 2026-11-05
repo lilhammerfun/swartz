@@ -12,7 +12,7 @@ pub(crate) struct ModelConfig {
     pub(crate) api_key: String,
 }
 
-const SERVICE: &str = "dev.tukdam.desktop";
+const SERVICE: &str = "dev.swartz.desktop";
 const ACCOUNT: &str = "model-settings";
 
 fn keyring_entry() -> Result<Entry, String> {

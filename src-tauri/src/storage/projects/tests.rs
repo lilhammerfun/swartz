@@ -20,10 +20,12 @@ static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
 #[test]
 fn development_projects_use_the_same_native_read_contract() {
     let library = TestLibrary::new();
-    library.write(include_str!(concat!(
+    let projects: Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../src/mock-data/projects.json"
-    )));
+    )))
+    .unwrap();
+    library.write(&json!({"sections": [], "projects": projects}).to_string());
     let projects = library.store().list().unwrap();
     assert_eq!(projects.len(), 6);
     for project in projects {
@@ -85,7 +87,7 @@ fn list_returns_only_metadata_and_detail_restores_tree_textbook_and_activities()
     library.write(PROJECT_DATA);
     let list = serde_json::to_value(library.store().list().unwrap()).unwrap();
     let source: Value = serde_json::from_str(PROJECT_DATA).unwrap();
-    assert_eq!(list, json!([source[0]["project"]]));
+    assert_eq!(list, json!([source["projects"][0]["project"]]));
 
     let detail = library.store().get("project-backend-interview").unwrap();
     assert_eq!(detail.goal.version, 1);
@@ -106,7 +108,7 @@ fn list_returns_only_metadata_and_detail_restores_tree_textbook_and_activities()
     assert_eq!(detail.activities[2].tool_call_id, "call-update-textbook");
 
     // Reopening preserves the same data; camelCase fields, content, and state survive a round trip.
-    assert_eq!(serde_json::to_value(detail).unwrap(), source[0]);
+    assert_eq!(serde_json::to_value(detail).unwrap(), source["projects"][0]);
     assert_eq!(
         library
             .store()
@@ -126,10 +128,13 @@ fn projects_are_selected_by_id_and_do_not_mix_goals_or_activity_logs() {
     let mut second: Value =
         serde_json::from_str(&PROJECT_DATA.replace("project-backend-interview", "project-rust"))
             .unwrap();
-    second[0]["project"]["title"] = json!("Exploring Rust");
-    second[0]["goal"]["content"] = json!("Understand ownership");
-    second[0]["activities"] = json!([]);
-    first.as_array_mut().unwrap().push(second[0].clone());
+    second["projects"][0]["project"]["title"] = json!("Exploring Rust");
+    second["projects"][0]["goal"]["content"] = json!("Understand ownership");
+    second["projects"][0]["activities"] = json!([]);
+    first["projects"]
+        .as_array_mut()
+        .unwrap()
+        .push(second["projects"][0].clone());
     library.write(&first.to_string());
 
     assert_eq!(library.store().list().unwrap().len(), 2);
@@ -152,11 +157,11 @@ fn projects_are_selected_by_id_and_do_not_mix_goals_or_activity_logs() {
 fn a_project_can_exist_before_a_goal_plan_or_textbook_has_content() {
     let library = TestLibrary::new();
     let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
-    data[0]["goal"]["content"] = json!("");
-    data[0]["plan"]["overview"] = json!("");
-    data[0]["plan"]["nodes"] = json!([]);
-    data[0]["textbook"] = Value::Null;
-    data[0]["activities"] = json!([]);
+    data["projects"][0]["goal"]["content"] = json!("");
+    data["projects"][0]["plan"]["overview"] = json!("");
+    data["projects"][0]["plan"]["nodes"] = json!([]);
+    data["projects"][0]["textbook"] = Value::Null;
+    data["projects"][0]["activities"] = json!([]);
     library.write(&data.to_string());
     let detail = library.store().get("project-backend-interview").unwrap();
     assert!(detail.goal.content.is_empty());
@@ -174,10 +179,10 @@ fn invalid_files_and_cross_project_references_are_reported_without_rewriting_byt
         assert_eq!(fs::read_to_string(&library.path).unwrap(), bytes);
     }
     for pointer in [
-        "/0/goal/projectId",
-        "/0/plan/projectId",
-        "/0/textbook/projectId",
-        "/0/activities/0/projectId",
+        "/projects/0/goal/projectId",
+        "/projects/0/plan/projectId",
+        "/projects/0/textbook/projectId",
+        "/projects/0/activities/0/projectId",
     ] {
         let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
         *data.pointer_mut(pointer).unwrap() = json!("another-project");
@@ -195,17 +200,25 @@ fn invalid_files_and_cross_project_references_are_reported_without_rewriting_byt
 fn duplicate_identities_and_zero_versions_cannot_appear_as_valid_details() {
     let library = TestLibrary::new();
     let source: Value = serde_json::from_str(PROJECT_DATA).unwrap();
-    let mut cases = vec![json!([source[0], source[0]])];
-    for pointer in ["/0/goal/version", "/0/plan/version", "/0/textbook/version"] {
+    let mut cases = vec![
+        json!({"sections": [], "projects": [source["projects"][0], source["projects"][0]]}),
+        // Arrays are not the library document format, even when their projects are otherwise valid.
+        source["projects"].clone(),
+    ];
+    for pointer in [
+        "/projects/0/goal/version",
+        "/projects/0/plan/version",
+        "/projects/0/textbook/version",
+    ] {
         let mut data = source.clone();
         *data.pointer_mut(pointer).unwrap() = json!(0);
         cases.push(data);
     }
     let mut duplicate_node = source.clone();
-    duplicate_node[0]["plan"]["nodes"][1]["children"][0]["id"] = json!("transaction");
+    duplicate_node["projects"][0]["plan"]["nodes"][1]["children"][0]["id"] = json!("transaction");
     cases.push(duplicate_node);
     let mut duplicate_activity = source.clone();
-    duplicate_activity[0]["activities"][1]["id"] = json!("activity-goal");
+    duplicate_activity["projects"][0]["activities"][1]["id"] = json!("activity-goal");
     cases.push(duplicate_activity);
     for data in cases {
         let bytes = data.to_string();
@@ -219,7 +232,7 @@ fn duplicate_identities_and_zero_versions_cannot_appear_as_valid_details() {
 fn unknown_business_activity_kinds_are_not_silently_dropped() {
     let library = TestLibrary::new();
     let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
-    data[0]["activities"][0]["kind"] = json!("proposal_created");
+    data["projects"][0]["activities"][0]["kind"] = json!("proposal_created");
     let bytes = data.to_string();
     library.write(&bytes);
     assert!(library.store().get("project-backend-interview").is_err());
@@ -247,8 +260,8 @@ fn empty_ids_are_rejected_and_project_ids_are_not_used_as_paths() {
 fn no_status_or_branch_aggregation_is_invented_by_the_read_api() {
     let library = TestLibrary::new();
     let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
-    data[0]["plan"]["nodes"][0]["status"] = json!("in_progress");
-    data[0]["plan"]["nodes"][0]["children"][0]["status"] = Value::Null;
+    data["projects"][0]["plan"]["nodes"][0]["status"] = json!("in_progress");
+    data["projects"][0]["plan"]["nodes"][0]["children"][0]["status"] = Value::Null;
     library.write(&data.to_string());
     let detail: ProjectDetail = library.store().get("project-backend-interview").unwrap();
     assert!(matches!(
@@ -256,7 +269,7 @@ fn no_status_or_branch_aggregation_is_invented_by_the_read_api() {
         Some(ExplorationStatus::InProgress)
     ));
     assert!(detail.plan.nodes[0].children[0].status.is_none());
-    assert_eq!(serde_json::to_value(detail).unwrap(), data[0]);
+    assert_eq!(serde_json::to_value(detail).unwrap(), data["projects"][0]);
 }
 
 #[test]
@@ -380,8 +393,7 @@ fn concurrent_section_writes_do_not_lose_updates() {
 #[test]
 fn dangling_section_references_and_duplicate_sections_are_rejected() {
     let library = TestLibrary::new();
-    let projects: Value = serde_json::from_str(PROJECT_DATA).unwrap();
-    let mut data = json!({"sections": [], "projects": projects});
+    let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     data["projects"][0]["project"]["librarySectionId"] = json!("missing");
     library.write(&data.to_string());
     assert!(library.store().library().is_err());
@@ -394,10 +406,12 @@ fn dangling_section_references_and_duplicate_sections_are_rejected() {
 fn batch_move_validates_every_project_before_saving() {
     use super::data::LibraryChange;
     let library = TestLibrary::new();
-    library.write(include_str!(concat!(
+    let projects: Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../src/mock-data/projects.json"
-    )));
+    )))
+    .unwrap();
+    library.write(&json!({"sections": [], "projects": projects}).to_string());
     let store = library.store();
     store
         .update(LibraryChange::CreateSection {

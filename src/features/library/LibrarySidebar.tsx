@@ -48,14 +48,14 @@ export function LibrarySidebar({
   onGettingStarted,
   gettingStarted,
 }: {
-  book: LearningBook;
+  book?: LearningBook;
   location: ReaderLocation;
   onNavigate: (location: ReaderLocation) => void;
   showContents?: boolean;
   onGettingStarted: () => void;
   gettingStarted?: ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(["ownership", "borrowing"]);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const { isMobile, setOpenMobile } = useSidebar();
   const navigate = (next: ReaderLocation) => {
     onNavigate(next);
@@ -113,7 +113,7 @@ export function LibrarySidebar({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        {showContents && book.chapters.length > 0 && (
+        {showContents && book && book.chapters.length > 0 && (
           <SidebarGroup className="p-0" aria-label="Table of contents">
             <SidebarGroupLabel className="mb-1 px-3 text-[11px] font-medium text-muted-foreground">
               Contents

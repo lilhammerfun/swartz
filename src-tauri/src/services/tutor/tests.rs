@@ -242,12 +242,13 @@ fn input_limits_and_missing_project_context_fail_before_model_execution() {
 #[test]
 fn project_context_retains_goal_plan_and_the_original_quote_snapshot() {
     let mut request = request();
-    let samples: Vec<projects::ProjectDetail> = serde_json::from_str(include_str!(concat!(
+    let samples: Value = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/mock-data/backend-interview.json"
     )))
     .unwrap();
-    let project = &samples[0];
+    let project: projects::ProjectDetail =
+        serde_json::from_value(samples["projects"][0].clone()).unwrap();
     request.target = ConversationTarget::Project {
         project_id: project.project.id.clone(),
     };
@@ -258,7 +259,7 @@ fn project_context_retains_goal_plan_and_the_original_quote_snapshot() {
         .unwrap();
         message.passage = Some(serde_json::from_value(json!({"bookId": project.project.id, "chapterId": "chapter", "sectionId": "section", "paragraphId": "paragraph", "version": 1, "quote": "Original quoted wording."})).unwrap());
     }
-    let input = context::prepare(&request, Some(project)).unwrap();
+    let input = context::prepare(&request, Some(&project)).unwrap();
     let history = serde_json::to_string(&input.history).unwrap();
     let prompt = serde_json::to_string(&input.prompt).unwrap();
     assert!(history.contains(&project.goal.content));

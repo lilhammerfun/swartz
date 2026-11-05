@@ -41,22 +41,12 @@ export interface PromptAttachment {
   text: string;
 }
 
-export interface DiscussionMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  attachments?: PromptAttachment[];
-}
-
 export interface Annotation {
   id: string;
-  /** Legacy snapshot field; new annotations originate from AI discussions. */
-  kind: "note" | "question";
   anchor: AnnotationAnchor;
   text: string;
   attachments?: PromptAttachment[];
   createdAt: string;
-  messages: DiscussionMessage[];
 }
 
 export type ReaderLocation =

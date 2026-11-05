@@ -1,7 +1,7 @@
 import type { AnnotationAnchor, PromptAttachment } from "../../types/book.ts";
 import type { ModelRequestOptions } from "../model/model-api.ts";
 
-export const CHAT_STORAGE_KEY = "tukdam.chat.v1";
+export const CHAT_STORAGE_KEY = "swartz.chat.v1";
 export interface ConversationMessage {
   id: string;
   role: "user" | "assistant";
@@ -26,7 +26,6 @@ export interface ChatSession {
   draft: string;
   draftAttachments: PromptAttachment[];
   draftPassage?: AnnotationAnchor;
-  legacyAnnotationId?: string;
   messages: ConversationMessage[];
   request?: ChatRequest;
 }
@@ -123,8 +122,6 @@ export function parseChat(raw: string): ChatSnapshot {
       (session.draftPassage !== undefined &&
         (!validPassage(session.draftPassage) ||
           session.draftPassage.bookId !== session.bookId)) ||
-      (session.legacyAnnotationId !== undefined &&
-        !text(session.legacyAnnotationId, 128)) ||
       (session.bookId !== undefined && !text(session.bookId, 256)) ||
       !Array.isArray(session.messages)
     )

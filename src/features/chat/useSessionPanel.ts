@@ -14,11 +14,12 @@ const emptyPanel = (): SessionPanelState => ({
   active: "list",
 });
 
-export function useSessionPanel(bookId: string) {
+export function useSessionPanel(bookId?: string) {
   const [panels, setPanels] = useState<Record<string, SessionPanelState>>({});
   const scrollPositions = useRef(new Map<string, number>());
-  const state = panels[bookId] ?? emptyPanel();
+  const state = (bookId ? panels[bookId] : undefined) ?? emptyPanel();
   function change(update: (current: SessionPanelState) => SessionPanelState) {
+    if (!bookId) return;
     setPanels((current) => ({
       ...current,
       [bookId]: update(current[bookId] ?? emptyPanel()),
@@ -35,7 +36,8 @@ export function useSessionPanel(bookId: string) {
         active: "list",
         passageMessageIds,
       })),
-    openSession: (id: string, targetBookId = bookId) =>
+    openSession: (id: string, targetBookId = bookId) => {
+      if (!targetBookId) return;
       setPanels((panels) => {
         const current = panels[targetBookId] ?? emptyPanel();
         return {
@@ -50,7 +52,8 @@ export function useSessionPanel(bookId: string) {
               : [...current.tabs, id],
           },
         };
-      }),
+      });
+    },
     closeSession: (id: string) =>
       change((current) => ({
         ...current,

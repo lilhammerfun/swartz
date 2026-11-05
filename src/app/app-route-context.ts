@@ -14,5 +14,5 @@ export interface AppRouteContext {
   project: { onStart: (detail: ProjectDetail) => void };
   conversation: ReactNode;
   reader: ComponentProps<typeof ReadingDocument> | null;
-  book: LearningBook;
+  book: LearningBook | undefined;
 }

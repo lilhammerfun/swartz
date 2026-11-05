@@ -9,12 +9,12 @@ import {
 } from "./book-integration.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
-import { learningBook } from "../../mock-data/book.ts";
-import { STORAGE_KEY as ANNOTATION_STORAGE_KEY } from "../annotations/annotation-store.ts";
+import { readFileSync } from "node:fs";
 import {
-  importAnnotationSessions,
-  sessionPassages,
-} from "./session-passages.ts";
+  projectBook as projectTextbook,
+  type ProjectDetail,
+} from "../projects/project-data.ts";
+import { sessionPassages } from "./session-passages.ts";
 import { prepareTutorRequest } from "./tutor-request.ts";
 import {
   CHAT_STORAGE_KEY,
@@ -28,6 +28,14 @@ import {
   updateChat,
   parseChat,
 } from "./chat-store.ts";
+
+const [projectDetail] = JSON.parse(
+  readFileSync(
+    new URL("../../mock-data/projects.json", import.meta.url),
+    "utf8",
+  ),
+) as ProjectDetail[];
+const learningBook = projectTextbook(projectDetail.project, projectDetail);
 
 const passage = {
   bookId: learningBook.id,
@@ -474,77 +482,6 @@ test("cross-book and malformed passage references cannot overwrite a valid snaps
   }).snapshot;
   queued.sessions[0].messages[0].role = "assistant";
   assert.throws(() => parseChat(JSON.stringify(queued)));
-});
-
-test("annotation migration preserves original bytes, source identity, attachments, and history without reimporting", () => {
-  const storage = memoryStorage();
-  startBookSession(storage, learningBook, true);
-  const annotation = {
-    id: "old-question",
-    kind: "question",
-    anchor: passage,
-    text: question.text,
-    attachments: question.attachments,
-    createdAt: "2026-10-20T12:00:00Z",
-    messages: [
-      { id: "reply", role: "assistant", text: "Original response" },
-      { id: "follow", role: "user", text: "Another question" },
-    ],
-  };
-  const original = JSON.stringify([annotation]);
-  storage.setItem(ANNOTATION_STORAGE_KEY, original);
-  const imported = importAnnotationSessions(storage);
-  assert.equal(imported.sessions.length, 2);
-  const migrated = imported.sessions.find(
-    (s) => s.legacyAnnotationId === annotation.id,
-  )!;
-  assert.deepEqual(
-    migrated.messages.map((m) => m.text),
-    [question.text, "Original response", "Another question"],
-  );
-  assert.deepEqual(migrated.messages[0].attachments, question.attachments);
-  assert.equal(sessionPassages(imported.sessions)[0].id, annotation.id);
-  const continued = queueQuestion(storage, {
-    ...question,
-    sessionId: migrated.id,
-  }).session;
-  const again = importAnnotationSessions(storage);
-  assert.equal(again.sessions.length, 2);
-  assert.equal(
-    again.sessions.find((s) => s.id === migrated.id)!.messages.length,
-    continued.messages.length,
-  );
-  assert.equal(storage.getItem(ANNOTATION_STORAGE_KEY), original);
-});
-
-test("unreadable legacy data and failed migration writes never replace either original store", () => {
-  const storage = memoryStorage();
-  startBookSession(storage, learningBook, true);
-  const before = storage.getItem(CHAT_STORAGE_KEY);
-  storage.setItem(ANNOTATION_STORAGE_KEY, "broken");
-  assert.throws(() => importAnnotationSessions(storage));
-  assert.equal(storage.getItem(CHAT_STORAGE_KEY), before);
-  const original = JSON.stringify([
-    {
-      id: "old",
-      kind: "question",
-      text: "Why?",
-      anchor: passage,
-      createdAt: "2026-10-20T12:00:00Z",
-      messages: [],
-    },
-  ]);
-  storage.setItem(ANNOTATION_STORAGE_KEY, original);
-  assert.throws(() =>
-    importAnnotationSessions({
-      getItem: storage.getItem,
-      setItem: () => {
-        throw new Error("Quota");
-      },
-    }),
-  );
-  assert.equal(storage.getItem(CHAT_STORAGE_KEY), before);
-  assert.equal(storage.getItem(ANNOTATION_STORAGE_KEY), original);
 });
 
 test("organizing preserves original quoted conversations and links a persistent book section", () => {

@@ -4,22 +4,20 @@ import type {
   ProjectDetail,
   LibrarySnapshot,
   LibraryChange,
-} from "./project-data";
+} from "./project-data.ts";
 
 const PREVIEW_KEY = "swartz.library-preview.v1";
 
 export async function getLibrary(): Promise<LibrarySnapshot> {
   if (isTauri()) return invoke("get_library");
-  const details = await previewProjects();
   const fixture = await previewFixture();
-  const { mergePreviewLibrary } =
-    await import("../../mock-data/library-preview");
   const saved = localStorage.getItem(PREVIEW_KEY);
-  const library = mergePreviewLibrary(saved ? JSON.parse(saved) : null, {
-    fixtureRevision: fixture.revision,
+  if (saved !== null) return JSON.parse(saved) as LibrarySnapshot;
+  const details = await previewProjects();
+  const library: LibrarySnapshot = {
     sections: fixture.sections,
     projects: details.map((detail) => detail.project),
-  });
+  };
   localStorage.setItem(PREVIEW_KEY, JSON.stringify(library));
   return library;
 }

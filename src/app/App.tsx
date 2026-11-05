@@ -42,7 +42,6 @@ import {
 } from "@/features/library/LibrarySectionDialog";
 import { LibrarySidebar } from "@/features/library/LibrarySidebar";
 import { GettingStarted } from "@/features/home/GettingStarted";
-import { useLibrary } from "@/features/library/useLibrary";
 import { useProjects } from "@/features/projects/useProjects";
 import {
   projectBook,
@@ -83,7 +82,6 @@ import {
   promptChoices,
   type PromptSubmission,
 } from "@/features/annotations/prompt-options";
-import { initialLocation, learningBook as starterBook } from "@/mock-data/book";
 import type {
   Annotation,
   AnnotationAnchor,
@@ -121,7 +119,7 @@ export default function App() {
   const navigation = useNavigation();
   const navigationType = useNavigationType();
   const matches = useMatches();
-  // Preserve legacy reading locations; page matching uses the router's actual matches.
+  // Derive the active page from the router's actual matches.
   const location = useMemo<ReaderLocation>(() => {
     const match = [...matches]
       .reverse()
@@ -159,25 +157,16 @@ export default function App() {
         : Math.max(current, committedIndex),
     );
   }, [routerLocation.key, navigationType]);
-  const storedLibrary = useLibrary(starterBook);
   const projects = useProjects();
   const integrations = useBookIntegrations();
-  // Feed project details into the existing reader while preserving legacy books for conversations and references.
+  // The reader projects textbooks from the project catalog; it owns no separate book catalog.
   const projectBooks = projects.projects.map((project) =>
     projectBook(project, projects.details[project.id]),
   );
   const library = {
-    ...storedLibrary,
-    books: [
-      ...storedLibrary.books.filter(
-        (item) => !projects.projects.some((project) => project.id === item.id),
-      ),
-      ...projectBooks,
-    ]
+    books: projectBooks
       .concat(
-        routeBook &&
-          !storedLibrary.books.some((item) => item.id === routeBook.id) &&
-          !projects.projects.some((item) => item.id === routeBook.id)
+        routeBook && !projectBooks.some((item) => item.id === routeBook.id)
           ? [routeBook]
           : [],
       )
@@ -238,10 +227,11 @@ export default function App() {
     setModelLoadError("");
   };
   const readingLocation = useRef<ReaderLocation>(
-    Object.values(latestReadingLocations(recent.entries))[0] ?? initialLocation,
+    Object.values(latestReadingLocations(recent.entries))[0] ?? {
+      scale: "home",
+    },
   );
   const readingLocations = useRef<Record<string, ReaderLocation>>({
-    [starterBook.id]: initialLocation,
     ...latestReadingLocations(recent.entries),
   });
   useEffect(() => {
@@ -264,27 +254,26 @@ export default function App() {
     location.scale === "chat"
       ? chat.getSession(location.conversationId)
       : undefined;
-  const book =
-    library.books.find(
-      (item) =>
-        item.id ===
-        (location.scale === "chat"
-          ? routeChatSession?.bookId
-          : "bookId" in currentBookLocation
-            ? currentBookLocation.bookId
-            : undefined),
-    ) ?? starterBook;
+  const book = library.books.find(
+    (item) =>
+      item.id ===
+      (location.scale === "chat"
+        ? routeChatSession?.bookId
+        : "bookId" in currentBookLocation
+          ? currentBookLocation.bookId
+          : undefined),
+  );
   const chapter =
-    book.chapters.find(
+    book?.chapters.find(
       (c) => location.scale === "section" && c.id === location.chapterId,
-    ) ?? book.chapters[0];
+    ) ?? book?.chapters[0];
   const section =
     chapter?.sections.find(
       (s) => location.scale === "section" && s.id === location.sectionId,
     ) ?? chapter?.sections[0];
   const inBook = location.scale === "section" || location.scale === "book";
-  const panel = useSessionPanel(book.id);
-  const panelVisible = inBook && panel.open;
+  const panel = useSessionPanel(book?.id);
+  const panelVisible = inBook && !!book && panel.open;
   const chatSession =
     location.scale === "chat"
       ? routeChatSession
@@ -406,7 +395,10 @@ export default function App() {
   };
   const openBook = (target: LearningBook) => {
     const project = projects.projects.find((item) => item.id === target.id);
-    if (!project) return navigateToBook(target);
+    if (!project) {
+      showNotice("This project could not be found.");
+      return;
+    }
     const cached = projects.getCached(project.id);
     if (cached)
       return navigateToBook(integrations.project(projectBook(project, cached)));
@@ -491,6 +483,7 @@ export default function App() {
     panel.openSession(id);
   };
   const newPanelSession = () => {
+    if (!book) return;
     const id = chat.startSession(book, true);
     if (!id) return;
     setActiveAnnotation(null);
@@ -504,7 +497,7 @@ export default function App() {
   const compose = (anchor: AnnotationAnchor) => {
     panel.setOpen(true);
     const current = chat.getSession(panel.active);
-    if (current && current.bookId === book.id)
+    if (book && current && current.bookId === book.id)
       attachPassage(current.id, anchor);
     else {
       panel.setPendingPassage(anchor);
@@ -619,7 +612,7 @@ export default function App() {
         focusMessageId={messageFocus?.id}
         focusRequest={messageFocus?.request}
         onLocatePassage={(id, anchor) => {
-          if (anchor.bookId !== book.id) return;
+          if (anchor.bookId !== book?.id) return;
           if (
             location.scale !== "section" ||
             location.sectionId !== anchor.sectionId
@@ -714,6 +707,7 @@ export default function App() {
     ),
     book,
     reader:
+      book &&
       location.scale === "section" &&
       chapter?.id === location.chapterId &&
       section?.id === location.sectionId
@@ -827,9 +821,9 @@ export default function App() {
                       )?.title
                     : chatSession
                       ? chatSession.bookId
-                        ? book.title
+                        ? book?.title
                         : chatSession.title
-                      : book.title}
+                      : book?.title}
                 </span>
                 {location.scale === "section" && chapter && (
                   <>
@@ -850,7 +844,7 @@ export default function App() {
                 className="flex h-full min-w-0 flex-1"
               />
             )}
-            {location.scale === "chat" && chatSession?.bookId && (
+            {location.scale === "chat" && chatSession?.bookId && book && (
               <IconButton label="Read book" onClick={() => openBook(book)}>
                 <BookOpen />
               </IconButton>
@@ -898,14 +892,14 @@ export default function App() {
             )}
           </div>
         </header>
-        {library.error && (
+        {projects.error && (
           <Alert
             variant="destructive"
             className="rounded-none border-x-0 border-t-0"
           >
             <AlertDescription className="flex items-center justify-between gap-3">
-              {library.error}
-              <Button variant="outline" size="sm" onClick={library.retry}>
+              {projects.error}
+              <Button variant="outline" size="sm" onClick={projects.retry}>
                 Retry loading
               </Button>
             </AlertDescription>
@@ -919,7 +913,7 @@ export default function App() {
                 toolbar={sessionToolbar}
                 state={panel}
                 sessions={chat.sessions
-                  .filter((session) => session.bookId === book.id)
+                  .filter((session) => session.bookId === book?.id)
                   .map((session) => ({
                     ...session,
                     messages: visibleMessages(session, integrations.entries),

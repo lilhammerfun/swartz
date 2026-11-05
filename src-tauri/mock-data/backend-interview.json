@@ -1,115 +1,118 @@
-[
-  {
-    "project": {
-      "id": "project-backend-interview",
-      "title": "Backend Interview Preparation",
-      "description": "Explore backend mechanisms and tradeoffs to build a structured personal textbook."
-    },
-    "goal": {
-      "projectId": "project-backend-interview",
-      "version": 1,
-      "content": "Prepare for backend interviews by explaining core mechanisms, analyzing tradeoffs, and turning discussions into a personal textbook."
-    },
-    "plan": {
-      "projectId": "project-backend-interview",
-      "version": 3,
-      "overview": "Start with concrete database questions, then connect them to caching and concurrency. Adjust the order as the discussion develops.",
-      "nodes": [
+{
+  "sections": [],
+  "projects": [
+    {
+      "project": {
+        "id": "project-backend-interview",
+        "title": "Backend Interview Preparation",
+        "description": "Explore backend mechanisms and tradeoffs to build a structured personal textbook."
+      },
+      "goal": {
+        "projectId": "project-backend-interview",
+        "version": 1,
+        "content": "Prepare for backend interviews by explaining core mechanisms, analyzing tradeoffs, and turning discussions into a personal textbook."
+      },
+      "plan": {
+        "projectId": "project-backend-interview",
+        "version": 3,
+        "overview": "Start with concrete database questions, then connect them to caching and concurrency. Adjust the order as the discussion develops.",
+        "nodes": [
+          {
+            "id": "mysql",
+            "title": "MySQL",
+            "description": "Explore database mechanisms through data access and concurrency questions.",
+            "status": null,
+            "children": [
+              {
+                "id": "index",
+                "title": "Indexes and Queries",
+                "description": "Use query examples to discuss how indexes affect data access.",
+                "status": "completed",
+                "children": []
+              },
+              {
+                "id": "transaction",
+                "title": "Transactions and Isolation",
+                "description": "Use concurrent reads and writes to discuss isolation and its implementation.",
+                "status": "in_progress",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "redis",
+            "title": "Redis",
+            "description": "Discuss caching through concrete use cases.",
+            "status": null,
+            "children": [
+              {
+                "id": "cache-consistency",
+                "title": "Cache Consistency",
+                "description": "Discuss problems that can arise when updating caches and databases.",
+                "status": "pending",
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      "textbook": {
+        "id": "textbook-backend",
+        "projectId": "project-backend-interview",
+        "title": "My Backend Notes",
+        "subtitle": "Explanations and connections built from concrete questions",
+        "version": 1,
+        "chapters": [
+          {
+            "id": "database",
+            "title": "Databases",
+            "purpose": "Organize material that has been discussed and approved for inclusion.",
+            "sections": [
+              {
+                "id": "index-query",
+                "title": "Understanding Indexes Through Queries",
+                "subtitle": "",
+                "paragraphs": [
+                  {
+                    "id": "index-example",
+                    "text": "When discussing indexes, first identify the data a query needs, then compare access methods.",
+                    "kind": "prose"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "activities": [
         {
-          "id": "mysql",
-          "title": "MySQL",
-          "description": "Explore database mechanisms through data access and concurrency questions.",
-          "status": null,
-          "children": [
-            {
-              "id": "index",
-              "title": "Indexes and Queries",
-              "description": "Use query examples to discuss how indexes affect data access.",
-              "status": "completed",
-              "children": []
-            },
-            {
-              "id": "transaction",
-              "title": "Transactions and Isolation",
-              "description": "Use concurrent reads and writes to discuss isolation and its implementation.",
-              "status": "in_progress",
-              "children": []
-            }
-          ]
+          "id": "activity-goal",
+          "projectId": "project-backend-interview",
+          "kind": "goal_updated",
+          "description": "Established the goal of explaining backend mechanisms and tradeoffs.",
+          "occurredAt": "2026-10-25T01:00:00Z",
+          "sessionId": "session-backend-1",
+          "toolCallId": "call-update-goal"
         },
         {
-          "id": "redis",
-          "title": "Redis",
-          "description": "Discuss caching through concrete use cases.",
-          "status": null,
-          "children": [
-            {
-              "id": "cache-consistency",
-              "title": "Cache Consistency",
-              "description": "Discuss problems that can arise when updating caches and databases.",
-              "status": "pending",
-              "children": []
-            }
-          ]
-        }
-      ]
-    },
-    "textbook": {
-      "id": "textbook-backend",
-      "projectId": "project-backend-interview",
-      "title": "My Backend Notes",
-      "subtitle": "Explanations and connections built from concrete questions",
-      "version": 1,
-      "chapters": [
+          "id": "activity-plan",
+          "projectId": "project-backend-interview",
+          "kind": "plan_updated",
+          "description": "Selected transactions and isolation as the current exploration topic.",
+          "occurredAt": "2026-10-25T01:10:00Z",
+          "sessionId": "session-backend-1",
+          "toolCallId": "call-update-plan"
+        },
         {
-          "id": "database",
-          "title": "Databases",
-          "purpose": "Organize material that has been discussed and approved for inclusion.",
-          "sections": [
-            {
-              "id": "index-query",
-              "title": "Understanding Indexes Through Queries",
-              "subtitle": "",
-              "paragraphs": [
-                {
-                  "id": "index-example",
-                  "text": "When discussing indexes, first identify the data a query needs, then compare access methods.",
-                  "kind": "prose"
-                }
-              ]
-            }
-          ]
+          "id": "activity-textbook",
+          "projectId": "project-backend-interview",
+          "kind": "textbook_revised",
+          "description": "Added the discussed explanation of indexes to the textbook.",
+          "occurredAt": "2026-10-25T01:20:00Z",
+          "sessionId": "session-backend-1",
+          "toolCallId": "call-update-textbook"
         }
       ]
-    },
-    "activities": [
-      {
-        "id": "activity-goal",
-        "projectId": "project-backend-interview",
-        "kind": "goal_updated",
-        "description": "Established the goal of explaining backend mechanisms and tradeoffs.",
-        "occurredAt": "2026-10-25T01:00:00Z",
-        "sessionId": "session-backend-1",
-        "toolCallId": "call-update-goal"
-      },
-      {
-        "id": "activity-plan",
-        "projectId": "project-backend-interview",
-        "kind": "plan_updated",
-        "description": "Selected transactions and isolation as the current exploration topic.",
-        "occurredAt": "2026-10-25T01:10:00Z",
-        "sessionId": "session-backend-1",
-        "toolCallId": "call-update-plan"
-      },
-      {
-        "id": "activity-textbook",
-        "projectId": "project-backend-interview",
-        "kind": "textbook_revised",
-        "description": "Added the discussed explanation of indexes to the textbook.",
-        "occurredAt": "2026-10-25T01:20:00Z",
-        "sessionId": "session-backend-1",
-        "toolCallId": "call-update-textbook"
-      }
-    ]
-  }
-]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import type { LearningBook } from "../../types/book.ts";
 
-/** Mirrors the read contract in Rust projects/data.rs without native session logs. */
+/** Mirrors the read contract in Rust storage/projects/data.rs without native session logs. */
 export interface Project {
   id: string;
   title: string;

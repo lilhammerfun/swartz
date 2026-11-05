@@ -14,7 +14,7 @@ export type RecentLearningEntry = {
 };
 
 type RecentStorage = Pick<Storage, "getItem" | "setItem">;
-export const RECENT_LEARNING_STORAGE_KEY = "tukdam.learning.recent.v1";
+export const RECENT_LEARNING_STORAGE_KEY = "swartz.learning.recent.v1";
 const MAX_ENTRIES = 20;
 
 function validId(value: unknown): value is string {

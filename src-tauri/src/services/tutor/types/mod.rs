@@ -2,7 +2,7 @@
 //!
 //! Projects retain learning context across learning days; day boundaries do not reset model context.
 //! Questions and learning starts are separate inputs, allowing proactive guidance without fake user messages.
-//! The frontend supplies prior message snapshots while chat storage migration is pending.
+//! Chat history is currently persisted by the frontend and supplied as message snapshots.
 //! TutorService loads the current Goal, Plan, and Textbook by project. Quotes retain their original
 //! text and version. Drafts belong to the UI; execution attempts are not learning or textbook changes.
 
@@ -42,7 +42,7 @@ pub struct TutorRequest {
     /// Identifies one execution attempt; retrying the same question replaces this ID.
     pub request_id: String,
     pub input: TutorInput,
-    /// Prior exchanges, excluding the current question; the service will load these after storage migration.
+    /// Prior exchanges supplied by the frontend, excluding the current question.
     pub history: Vec<ConversationMessage>,
     pub options: ModelRequestOptions,
 }

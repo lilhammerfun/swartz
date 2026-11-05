@@ -35,7 +35,7 @@ export interface TutorResult {
     | { status: "cancelled" };
 }
 
-/** Maps legacy storage into a business request without creating sessions, grouping days, or calling a model. */
+/** Maps a saved conversation into a business request without creating sessions, grouping days, or calling a model. */
 export function prepareTutorRequest(session: ChatSession): TutorRequest {
   const request = session.request;
   const question = session.messages.at(-1);
@@ -49,7 +49,7 @@ export function prepareTutorRequest(session: ChatSession): TutorRequest {
 
   return {
     target: session.bookId
-      ? // projectBook maps the legacy reader's bookId to project.id, not to the textbook's own ID.
+      ? // Reader bookId identifies the project, not the textbook's own ID.
         { kind: "project", projectId: session.bookId }
       : { kind: "unassigned", conversationId: session.id },
     requestId: request.id,

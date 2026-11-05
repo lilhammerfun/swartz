@@ -23,7 +23,7 @@ use self::data::{LibraryData, LibrarySection, PlanNode};
 static LIBRARY_WRITE: Mutex<()> = Mutex::new(());
 static NEXT_WRITE: AtomicU64 = AtomicU64::new(0);
 
-/// Reads legacy arrays; the first mutation writes the complete document with sections and projects.
+/// Stores the project library as a single document containing sections and projects.
 pub(crate) struct ProjectStore {
     path: PathBuf,
 }
@@ -44,16 +44,7 @@ impl ProjectStore {
                 );
             }
         };
-        let value: serde_json::Value =
-            serde_json::from_slice(&bytes).map_err(|_| invalid_library())?;
-        let data = if value.is_array() {
-            LibraryData {
-                sections: Vec::new(),
-                projects: serde_json::from_value(value).map_err(|_| invalid_library())?,
-            }
-        } else {
-            serde_json::from_value(value).map_err(|_| invalid_library())?
-        };
+        let data: LibraryData = serde_json::from_slice(&bytes).map_err(|_| invalid_library())?;
         validate_library(&data)?;
         Ok(data)
     }

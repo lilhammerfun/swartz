@@ -26,7 +26,7 @@ function storedQuestion(request: TutorRequest): ChatSession {
     id:
       request.target.kind === "unassigned"
         ? request.target.conversationId
-        : "chat-legacy-rust",
+        : "chat-project-rust",
     ...(request.target.kind === "project"
       ? { bookId: request.target.projectId }
       : {}),

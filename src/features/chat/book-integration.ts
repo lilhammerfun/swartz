@@ -1,7 +1,7 @@
 import type { BookSection, LearningBook } from "../../types/book.ts";
 import type { ChatSession, ChatStorage } from "./chat-store.ts";
 
-export const INTEGRATION_KEY = "tukdam.book-integrations.preview.v1";
+export const INTEGRATION_KEY = "swartz.book-integrations.preview.v1";
 export interface BookIntegration {
   id: string;
   sessionId: string;

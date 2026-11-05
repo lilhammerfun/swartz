@@ -1,25 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { normalizeBaseUrl, modelIsConfigured } from "./model-api.ts";
-import {
-  answeredAnnotation,
-  appendAnsweredExchange,
-} from "../annotations/answered-discussion.ts";
-import { learningBook } from "../../mock-data/book.ts";
-import type { AnnotationAnchor } from "../../types/book.ts";
 import { readPromptAttachments } from "../annotations/prompt-attachments.ts";
 import { promptChoices } from "../annotations/prompt-options.ts";
-import { parseAnnotations } from "../annotations/annotation-store.ts";
-
-const anchor: AnnotationAnchor = {
-  bookId: learningBook.id,
-  chapterId: "borrowing",
-  sectionId: "mutable",
-  paragraphId: "mutable-intro",
-  version: 1,
-  quote: "A mutable reference gives you exclusive access.",
-};
-
 test("model settings distinguish local endpoints and reject unsafe URLs", () => {
   for (const invalid of [
     "http://remote.example/v1",
@@ -49,60 +32,6 @@ test("model settings distinguish local endpoints and reject unsafe URLs", () => 
   );
 });
 
-test("an unanswered question cannot become an annotation", () => {
-  assert.throws(() => answeredAnnotation(anchor, "Why?", ""), /AI answer/);
-  const original = structuredClone(anchor);
-  const annotation = answeredAnnotation(
-    original,
-    "Why?",
-    "Because access is exclusive.",
-  );
-  original.quote = "Changed text";
-  assert.equal(annotation.anchor.quote, anchor.quote);
-  assert.equal(annotation.kind, "question");
-  assert.equal(annotation.messages[0].role, "assistant");
-  const updated = appendAnsweredExchange(
-    [annotation],
-    annotation.id,
-    "What about two readers?",
-    "Shared access permits multiple readers.",
-  );
-  assert.deepEqual(
-    updated[0].messages.map((m) => m.role),
-    ["assistant", "user", "assistant"],
-  );
-  assert.equal(annotation.messages.length, 1);
-});
-
-test("text attachments survive saving with their original question and follow-up", async () => {
-  const files = await readPromptAttachments(
-    [new File(["A reader borrows without moving ownership."], "notes.md")],
-    [],
-  );
-  const discussion = answeredAnnotation(
-    anchor,
-    "Compare this note.",
-    "Both describe shared access.",
-    files,
-  );
-  const followupFiles = await readPromptAttachments(
-    [new File(["let r = &value;"], "example.txt")],
-    [],
-  );
-  const updated = appendAnsweredExchange(
-    [discussion],
-    discussion.id,
-    "Explain this example.",
-    "The reference borrows value.",
-    followupFiles,
-  );
-  const restored = parseAnnotations(JSON.stringify(updated))[0];
-  assert.deepEqual(restored.attachments, files);
-  assert.deepEqual(restored.messages[1].attachments, followupFiles);
-  assert.equal(restored.messages[1].text, "Explain this example.");
-  assert.equal(restored.text, "Compare this note.");
-});
-
 test("attachments reject unsupported, binary, oversized, and excessive files before submission", async () => {
   await assert.rejects(
     readPromptAttachments([new File(["PDF"], "notes.pdf")], []),
@@ -129,14 +58,6 @@ test("attachments reject unsupported, binary, oversized, and excessive files bef
       [],
     ),
     /4/,
-  );
-  const invalid = {
-    ...answeredAnnotation(anchor, "Why?", "An answer."),
-    attachments: [{ id: "one", name: "bad.txt", text: 42 }],
-  };
-  assert.throws(
-    () => parseAnnotations(JSON.stringify([invalid])),
-    /Invalid annotation/,
   );
 });
 
