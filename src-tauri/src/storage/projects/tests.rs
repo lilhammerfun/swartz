@@ -7,17 +7,23 @@ use std::{
 use serde_json::{Value, json};
 
 use super::{
+    ProjectStore,
     data::{ExplorationStatus, ProjectDetail},
-    store::ProjectStore,
 };
 
-const PROJECT_DATA: &str = include_str!("../../mock-data/backend-interview.json");
+const PROJECT_DATA: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/mock-data/backend-interview.json"
+));
 static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
 
 #[test]
 fn development_projects_use_the_same_native_read_contract() {
     let library = TestLibrary::new();
-    library.write(include_str!("../../../src/mock-data/projects.json"));
+    library.write(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../src/mock-data/projects.json"
+    )));
     let projects = library.store().list().unwrap();
     assert_eq!(projects.len(), 6);
     for project in projects {
@@ -388,7 +394,10 @@ fn dangling_section_references_and_duplicate_sections_are_rejected() {
 fn batch_move_validates_every_project_before_saving() {
     use super::data::LibraryChange;
     let library = TestLibrary::new();
-    library.write(include_str!("../../../src/mock-data/projects.json"));
+    library.write(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../src/mock-data/projects.json"
+    )));
     let store = library.store();
     store
         .update(LibraryChange::CreateSection {

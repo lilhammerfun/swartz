@@ -9,14 +9,13 @@ import {
 } from "./book-integration.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { LearningBook } from "../../types/book.ts";
 import { learningBook } from "../../mock-data/book.ts";
 import { STORAGE_KEY as ANNOTATION_STORAGE_KEY } from "../annotations/annotation-store.ts";
 import {
   importAnnotationSessions,
   sessionPassages,
 } from "./session-passages.ts";
-import { ordinaryChatMessages } from "./chat-messages.ts";
+import { prepareTutorRequest } from "./tutor-request.ts";
 import {
   CHAT_STORAGE_KEY,
   queueQuestion,
@@ -179,66 +178,34 @@ test("ordinary chat sends history and real attachment contents with no invented 
     text: "And references?",
     attachments: [],
   }).session;
-  const messages = ordinaryChatMessages(continued);
+  const request = prepareTutorRequest(continued);
   assert.deepEqual(
-    messages.map((message) => message.role),
-    ["system", "user", "assistant", "user"],
+    request.history.map((message) => message.role),
+    ["user", "assistant"],
   );
   assert.equal(
-    JSON.parse(messages[1].content).attachments[0].text,
+    request.history[0].attachments?.[0].text,
     question.attachments[0].text,
   );
-  assert.equal(messages[2].content, "Answer one");
-  assert.equal(messages[3].content, "And references?");
-  assert.match(messages[0].content, /cannot create or modify books/);
-  assert.doesNotMatch(messages[1].content, /selectedPassage/);
+  assert.equal(request.history[1].text, "Answer one");
+  assert.equal(request.input.kind, "question");
+  if (request.input.kind !== "question") throw new Error("Expected a question");
+  assert.equal(request.input.message.text, "And references?");
+  assert.equal(request.history[0].passage, undefined);
 });
 
-test("book conversations include hierarchy as context and enforce request length before sending", () => {
+test("project questions carry their identity while oversized attachments cannot be queued", () => {
   const storage = memoryStorage();
-  const book: LearningBook = {
-    id: "book-a",
-    title: "Borrowing",
-    subtitle: "Rust",
-    version: 1,
-    chapters: [
-      {
-        id: "c",
-        title: "Ownership",
-        purpose: "Understand access",
-        sections: [
-          {
-            id: "s",
-            title: "References",
-            subtitle: "",
-            paragraphs: [{ id: "p", text: "A reference borrows access." }],
-          },
-        ],
-      },
-    ],
-  };
-  const { session } = queueQuestion(storage, { ...question, bookId: book.id });
-  assert.throws(() => ordinaryChatMessages(session));
-  const messages = ordinaryChatMessages(session, book);
-  const context = JSON.parse(messages[1].content).bookContext;
-  assert.equal(context.chapters[0].purpose, "Understand access");
-  assert.equal(
-    context.chapters[0].sections[0].text,
-    "A reference borrows access.",
-  );
-  assert.equal(
-    book.chapters[0].sections[0].paragraphs[0].text,
-    "A reference borrows access.",
-  );
-  assert.throws(() =>
-    ordinaryChatMessages(
-      {
-        ...session,
-        messages: [{ ...session.messages[0], text: "a".repeat(120000) }],
-      },
-      book,
-    ),
-  );
+  const { session } = queueQuestion(storage, {
+    ...question,
+    bookId: learningBook.id,
+  });
+  const request = prepareTutorRequest(session);
+  assert.deepEqual(request.target, {
+    kind: "project",
+    projectId: learningBook.id,
+  });
+  assert.equal("bookContext" in request, false);
   assert.throws(() =>
     queueQuestion(storage, {
       ...question,
@@ -450,8 +417,10 @@ test("quoted context is persisted with its user message, retained on retry, and 
   });
   assert.equal(queued.session.draftPassage, undefined);
   assert.deepEqual(readChat(storage).sessions[0].messages[0].passage, passage);
-  const prompt = ordinaryChatMessages(queued.session, learningBook);
-  assert.deepEqual(JSON.parse(prompt.at(-1)!.content).selectedPassage, passage);
+  const request = prepareTutorRequest(queued.session);
+  assert.equal(request.input.kind, "question");
+  if (request.input.kind !== "question") throw new Error("Expected a question");
+  assert.deepEqual(request.input.message.passage, passage);
   settleQuestion(storage, session.id, queued.session.messages[0].id, {
     error: "Offline",
   });

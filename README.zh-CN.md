@@ -23,7 +23,7 @@ pnpm install --frozen-lockfile
 pnpm desktop
 ```
 
-浏览器预览使用 `pnpm dev`。AI 交流需在 Settings 中连接自己的模型服务。
+浏览器界面预览使用 `pnpm dev`。AI 交流和模型配置需要启动桌面应用（`pnpm desktop`），所有模型请求均由 Rust Tutor 处理。
 
 ## 许可证
 

@@ -7,22 +7,19 @@ import {
   retryQuestion,
   type ChatSession,
 } from "./chat-store.ts";
-import {
-  prepareQuestionRequest,
-  type ConversationRequest,
-} from "./conversation-request.ts";
+import { prepareTutorRequest, type TutorRequest } from "./tutor-request.ts";
 
 const samples = JSON.parse(
   readFileSync(
     new URL(
-      "../../../src-tauri/mock-data/conversation-contracts.json",
+      "../../../src-tauri/mock-data/tutor-contracts.json",
       import.meta.url,
     ),
     "utf8",
   ),
-) as { requests: Record<string, ConversationRequest> };
+) as { requests: Record<string, TutorRequest> };
 
-function storedQuestion(request: ConversationRequest): ChatSession {
+function storedQuestion(request: TutorRequest): ChatSession {
   assert.equal(request.input.kind, "question");
   if (request.input.kind !== "question") throw new Error("Expected a question");
   return {
@@ -53,7 +50,7 @@ test("ordinary and quoted questions match the Rust wire contract without repeati
   for (const name of ["ordinary", "quoted"]) {
     const expected = samples.requests[name];
     const source = storedQuestion(expected);
-    const request = prepareQuestionRequest(source);
+    const request = prepareTutorRequest(source);
     assert.deepEqual(request, expected);
     assert.equal(request.history.length, source.messages.length - 1);
     // Later UI changes must not mutate prepared history, attachments, or the original quoted text.
@@ -76,9 +73,9 @@ test("retrying retains project and question identity while replacing only the at
       data.set(key, value);
     },
   };
-  const before = prepareQuestionRequest(session);
+  const before = prepareTutorRequest(session);
   const retried = retryQuestion(storage, session.id).sessions[0];
-  const after = prepareQuestionRequest(retried);
+  const after = prepareTutorRequest(retried);
   assert.notEqual(after.requestId, before.requestId);
   assert.deepEqual(after.target, before.target);
   assert.deepEqual(after.input, before.input);
@@ -88,5 +85,5 @@ test("retrying retains project and question identity while replacing only the at
 test("a stale pending-message link cannot silently submit a different question", () => {
   const session = storedQuestion(samples.requests.quoted);
   session.request!.userMessageId = "another-question";
-  assert.throws(() => prepareQuestionRequest(session), /pending question/);
+  assert.throws(() => prepareTutorRequest(session), /pending question/);
 });

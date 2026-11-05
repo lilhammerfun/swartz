@@ -5,9 +5,8 @@ import type {
   PromptAttachment,
 } from "../../types/book";
 import type { PromptSubmission } from "../annotations/prompt-options";
-import { askModel } from "../model/model-service";
+import { runTutor, type TutorRun } from "./tutor-service";
 import type { ModelRequestOptions } from "../model/model-api";
-import { ordinaryChatMessages } from "./chat-messages";
 import { importAnnotationSessions } from "./session-passages";
 import { cleanupEmptyPreviewSessions } from "../../mock-data/preview-sessions";
 import { seedOrganizeConversation } from "../../mock-data/organize-conversation";
@@ -39,6 +38,7 @@ export function useChat() {
   const [error, setError] = useState("");
   const [pendingSessionId, setPendingSessionId] = useState<string>();
   const activeRequest = useRef<string | undefined>(undefined);
+  const activeRun = useRef<TutorRun | undefined>(undefined);
   const loaded = useRef(false);
   const failedPending = useRef(new Map<string, FailedChatRequest>());
   function acceptSnapshot(next: ChatSnapshot) {
@@ -68,6 +68,13 @@ export function useChat() {
       setError(errorMessage(cause));
     }
   }, []);
+  useEffect(
+    () => () => {
+      // Unmounting must release the backend execution, not just discard its result.
+      void activeRun.current?.cancel().catch(() => undefined);
+    },
+    [],
+  );
   useEffect(() => {
     const sync = (event: StorageEvent) => {
       if (event.key !== CHAT_STORAGE_KEY) return;
@@ -103,20 +110,31 @@ export function useChat() {
       setError(errorMessage(cause));
     }
   }
-  async function run(
-    session: ChatSession,
-    book?: LearningBook,
-  ): Promise<boolean> {
+  async function run(session: ChatSession): Promise<boolean> {
     const request = session.request!;
     activeRequest.current = request.id;
     setPendingSessionId(session.id);
     setError("");
     try {
-      const answer = await askModel(
-        ordinaryChatMessages(session, book),
-        request.options,
-      );
+      const execution = runTutor(session);
+      activeRun.current = execution;
+      const result = await execution.result;
       if (activeRequest.current !== request.id) return false;
+      if (result.outcome.status === "failed")
+        throw new Error(result.outcome.error);
+      if (result.outcome.status === "cancelled") {
+        acceptSnapshot(
+          settleQuestion(
+            localStorage,
+            session.id,
+            request.userMessageId,
+            { cancelled: true },
+            request.id,
+          ),
+        );
+        return false;
+      }
+      const answer = result.outcome.text;
       acceptSnapshot(
         settleQuestion(
           localStorage,
@@ -167,6 +185,7 @@ export function useChat() {
     } finally {
       if (activeRequest.current === request.id) {
         activeRequest.current = undefined;
+        activeRun.current = undefined;
         setPendingSessionId(undefined);
       }
     }
@@ -184,30 +203,11 @@ export function useChat() {
         model: input.submission.model,
         reasoningEffort: input.submission.reasoningEffort,
       };
-      // Validate the complete request before queuing, including book context and previous attachments.
       const previous = input.sessionId
         ? readChat(localStorage).sessions.find(
             (session) => session.id === input.sessionId,
           )
         : undefined;
-      const candidate = {
-        ...previous,
-        bookId: previous?.bookId ?? input.book?.id,
-        messages: [
-          ...(previous?.messages ?? []),
-          {
-            id: "candidate",
-            role: "user" as const,
-            text: input.text.trim(),
-            createdAt: new Date().toISOString(),
-            attachments: input.submission.attachments,
-            ...(previous?.draftPassage
-              ? { passage: previous.draftPassage }
-              : {}),
-          },
-        ],
-      } as ChatSession;
-      ordinaryChatMessages(candidate, input.book);
       const queued = queueQuestion(localStorage, {
         sessionId: input.sessionId,
         bookId: input.book?.id,
@@ -220,9 +220,7 @@ export function useChat() {
       // Claim the single-flight slot before navigation can cause another submission.
       activeRequest.current = queued.session.request!.id;
       input.onSessionReady?.(queued.session.id);
-      return (await run(queued.session, input.book))
-        ? queued.session.id
-        : undefined;
+      return (await run(queued.session)) ? queued.session.id : undefined;
     } catch (cause) {
       activeRequest.current = undefined;
       setError(errorMessage(cause));
@@ -231,16 +229,10 @@ export function useChat() {
   }
   async function retry(
     sessionId: string,
-    book?: LearningBook,
     options?: ModelRequestOptions,
   ): Promise<boolean> {
     if (activeRequest.current) return false;
     try {
-      const current = readChat(localStorage).sessions.find(
-        (item) => item.id === sessionId,
-      );
-      if (!current) throw new Error("This conversation could not be found.");
-      ordinaryChatMessages(current, book);
       const next = retryQuestion(
         localStorage,
         sessionId,
@@ -251,7 +243,6 @@ export function useChat() {
       acceptSnapshot(next);
       return await run(
         next.sessions.find((session) => session.id === sessionId)!,
-        book,
       );
     } catch (cause) {
       setError(errorMessage(cause));
@@ -308,5 +299,12 @@ export function useChat() {
     },
     send,
     retry,
+    cancel: async () => {
+      try {
+        await activeRun.current?.cancel();
+      } catch (cause) {
+        setError(errorMessage(cause));
+      }
+    },
   };
 }

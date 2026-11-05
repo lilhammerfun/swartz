@@ -2,37 +2,33 @@ import type { ModelRequestOptions } from "../model/model-api.ts";
 import type { ChatSession, ConversationMessage } from "./chat-store.ts";
 
 /**
- * Business inputs for learning conversations, without system prompts, provider messages, or credentials.
+ * Inputs and results for Tutor execution, without system prompts, provider messages, or credentials.
  * Projects own conversations; learning days group records without resetting model context.
  * Existing Home chats retain their storage IDs until they are assigned to a project.
  *
  * Chat history still lives in the frontend; history is a snapshot excluding the current question.
  * Rust will load Goal, Plan, and the current Textbook by projectId; quotes retain their original version.
- * Drafts belong to the UI. useChat currently owns execution state, which will later move to Rust.
- * These contracts are not yet connected to Rust/Rig; live requests still use askModel.
+ * Drafts and saved chat messages belong to the UI. Rust's TutorService owns active native runs.
+ * Model execution is owned by the Rust Tutor; the frontend only submits business inputs.
  */
 export type ConversationTarget =
   | { kind: "project"; projectId: string }
   | { kind: "unassigned"; conversationId: string };
 
-export type ConversationInput =
+export type TutorInput =
   | { kind: "question"; message: ConversationMessage & { role: "user" } }
   | { kind: "start_learning" };
 
-export interface ConversationRequest {
+export interface TutorRequest {
   target: ConversationTarget;
   /** Identifies one execution attempt; retries retain the user message ID and replace this ID. */
   requestId: string;
-  input: ConversationInput;
+  input: TutorInput;
   history: ConversationMessage[];
   options: ModelRequestOptions;
 }
 
-export interface ConversationResult {
-  target: ConversationTarget;
-  requestId: string;
-  /** Proactive guidance has no corresponding user message. */
-  userMessageId?: string;
+export interface TutorResult {
   outcome:
     | { status: "completed"; text: string }
     | { status: "failed"; error: string }
@@ -40,9 +36,7 @@ export interface ConversationResult {
 }
 
 /** Maps legacy storage into a business request without creating sessions, grouping days, or calling a model. */
-export function prepareQuestionRequest(
-  session: ChatSession,
-): ConversationRequest {
+export function prepareTutorRequest(session: ChatSession): TutorRequest {
   const request = session.request;
   const question = session.messages.at(-1);
   if (

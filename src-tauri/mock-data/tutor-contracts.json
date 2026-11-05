@@ -1,7 +1,10 @@
 {
   "requests": {
     "ordinary": {
-      "target": { "kind": "unassigned", "conversationId": "chat-home" },
+      "target": {
+        "kind": "unassigned",
+        "conversationId": "chat-home"
+      },
       "requestId": "attempt-home-1",
       "input": {
         "kind": "question",
@@ -16,7 +19,10 @@
       "options": {}
     },
     "quoted": {
-      "target": { "kind": "project", "projectId": "project-rust" },
+      "target": {
+        "kind": "project",
+        "projectId": "project-rust"
+      },
       "requestId": "attempt-rust-2",
       "input": {
         "kind": "question",
@@ -56,12 +62,20 @@
           "createdAt": "2026-11-03T20:00:05+08:00"
         }
       ],
-      "options": { "model": "configured-model", "reasoningEffort": "low" }
+      "options": {
+        "model": "configured-model",
+        "reasoningEffort": "low"
+      }
     },
     "startLearning": {
-      "target": { "kind": "project", "projectId": "project-rust" },
+      "target": {
+        "kind": "project",
+        "projectId": "project-rust"
+      },
       "requestId": "attempt-guidance-1",
-      "input": { "kind": "start_learning" },
+      "input": {
+        "kind": "start_learning"
+      },
       "history": [
         {
           "id": "question-rust-1",
@@ -81,27 +95,21 @@
   },
   "results": [
     {
-      "target": { "kind": "unassigned", "conversationId": "chat-home" },
-      "requestId": "attempt-home-1",
-      "userMessageId": "question-home-1",
       "outcome": {
         "status": "completed",
         "text": "We can start with a small example."
       }
     },
     {
-      "target": { "kind": "project", "projectId": "project-rust" },
-      "requestId": "attempt-rust-2",
-      "userMessageId": "question-rust-2",
       "outcome": {
         "status": "failed",
         "error": "The model provider is temporarily unavailable."
       }
     },
     {
-      "target": { "kind": "project", "projectId": "project-rust" },
-      "requestId": "attempt-guidance-1",
-      "outcome": { "status": "cancelled" }
+      "outcome": {
+        "status": "cancelled"
+      }
     }
   ]
 }

@@ -1,14 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createServer } from "node:http";
-import { once } from "node:events";
-import {
-  normalizeBaseUrl,
-  parseModelAnswer,
-  prepareModelConfig,
-  requestModel,
-} from "./model-api.ts";
-import { learningMessages } from "./learning-messages.ts";
+import { normalizeBaseUrl, modelIsConfigured } from "./model-api.ts";
 import {
   answeredAnnotation,
   appendAnsweredExchange,
@@ -28,25 +20,7 @@ const anchor: AnnotationAnchor = {
   quote: "A mutable reference gives you exclusive access.",
 };
 
-test("changing endpoints cannot silently reuse the previous provider key", () => {
-  const previous = {
-    baseUrl: "https://first.example/v1",
-    model: "model-a",
-    apiKey: "test-only-key",
-  };
-  assert.throws(
-    () =>
-      prepareModelConfig(
-        { baseUrl: "https://other.example/v1", model: "model-b", apiKey: "" },
-        previous,
-      ),
-    /API key/,
-  );
-  assert.equal(
-    prepareModelConfig({ ...previous, model: "model-b", apiKey: "" }, previous)
-      .apiKey,
-    "test-only-key",
-  );
+test("model settings distinguish local endpoints and reject unsafe URLs", () => {
   for (const invalid of [
     "http://remote.example/v1",
     "https://user:key@example.com/v1",
@@ -56,6 +30,22 @@ test("changing endpoints cannot silently reuse the previous provider key", () =>
   assert.equal(
     normalizeBaseUrl("http://localhost:1234/v1/"),
     "http://localhost:1234/v1",
+  );
+  assert.equal(
+    modelIsConfigured({
+      baseUrl: "http://localhost:1234/v1",
+      model: "local-model",
+      hasApiKey: false,
+    }),
+    true,
+  );
+  assert.equal(
+    modelIsConfigured({
+      baseUrl: "https://provider.example/v1",
+      model: "remote-model",
+      hasApiKey: false,
+    }),
+    false,
   );
 });
 
@@ -84,170 +74,11 @@ test("an unanswered question cannot become an annotation", () => {
   assert.equal(annotation.messages.length, 1);
 });
 
-test("follow-ups include the original quote, chapter purpose, and complete prior exchange", () => {
-  const discussion = answeredAnnotation(
-    anchor,
-    "Why exclusive access?",
-    "A writer can invalidate a reader's assumptions.",
-  );
-  const messages = learningMessages(
-    learningBook,
-    anchor,
-    "Can you show an example?",
-    discussion,
-  );
-  const context = JSON.parse(messages[1].content);
-  assert.equal(context.selectedPassage, anchor.quote);
-  assert.equal(context.question, discussion.text);
-  assert.ok(context.chapterPurpose);
-  assert.deepEqual(
-    messages.slice(2).map((m) => m.role),
-    ["assistant", "user"],
-  );
-  assert.equal(messages.at(-1)?.content, "Can you show an example?");
-});
-
-function responseFixture(text: string) {
-  return {
-    id: "resp_fixture",
-    object: "response",
-    model: "test-model",
-    status: "completed",
-    output: [
-      {
-        type: "reasoning",
-        summary: [{ type: "summary_text", text: "Not assistant text." }],
-      },
-      {
-        type: "message",
-        role: "assistant",
-        content: [{ type: "output_text", text }],
-      },
-    ],
-  };
-}
-
-test("the HTTP client uses Responses and preserves the model, history and explicit effort", async () => {
-  let payload: unknown;
-  const server = createServer(async (req, res) => {
-    assert.equal(req.method, "POST");
-    assert.equal(req.url, "/v1/responses");
-    assert.equal(req.headers.authorization, "Bearer test-only-key");
-    let body = "";
-    for await (const chunk of req) body += chunk;
-    payload = JSON.parse(body);
-    res.setHeader("Content-Type", "application/json");
-    res.end(
-      JSON.stringify(responseFixture("A local protocol fixture answer.")),
-    );
-  });
-  server.listen(0, "127.0.0.1");
-  await once(server, "listening");
-  try {
-    const address = server.address();
-    assert.ok(address && typeof address !== "string");
-    const messages = learningMessages(
-      learningBook,
-      anchor,
-      "Why exclusive access?",
-    );
-    messages.push(
-      { role: "assistant", content: "A previous answer." },
-      { role: "user", content: "A follow-up question." },
-    );
-    const input = messages.map((message) => ({
-      type: "message",
-      role: message.role,
-      content: [
-        {
-          type: message.role === "assistant" ? "output_text" : "input_text",
-          text: message.content,
-        },
-      ],
-    }));
-    const answer = await requestModel(
-      {
-        baseUrl: `http://127.0.0.1:${address.port}/v1`,
-        model: "test-model",
-        apiKey: "test-only-key",
-      },
-      messages,
-    );
-    assert.equal(answer, "A local protocol fixture answer.");
-    assert.deepEqual(payload, {
-      model: "test-model",
-      input,
-      store: false,
-      stream: false,
-    });
-    await requestModel(
-      {
-        baseUrl: `http://127.0.0.1:${address.port}/v1`,
-        model: "test-model",
-        apiKey: "test-only-key",
-      },
-      messages,
-      { model: "selected-model-high", reasoningEffort: "low" },
-    );
-    assert.deepEqual(payload, {
-      model: "selected-model-high",
-      input,
-      store: false,
-      stream: false,
-      reasoning: { effort: "low", summary: "auto" },
-    });
-  } finally {
-    server.close();
-    await once(server, "close");
-  }
-});
-
-test("Responses parsing joins assistant text without exposing reasoning or accepting incomplete output", () => {
-  const fixture = responseFixture("First part. ");
-  fixture.output.push({
-    type: "message",
-    role: "assistant",
-    content: [{ type: "output_text", text: "Second part." }],
-  });
-  assert.equal(parseModelAnswer(fixture), "First part. Second part.");
-  for (const status of ["incomplete", "failed", "cancelled"])
-    assert.throws(() => parseModelAnswer({ ...fixture, status }), /incomplete/);
-  assert.throws(() => parseModelAnswer({ output: [] }), /invalid response/);
-  assert.throws(
-    () => parseModelAnswer(responseFixture("")),
-    /returned no text/,
-  );
-  assert.throws(
-    () =>
-      parseModelAnswer({
-        status: "completed",
-        output: [
-          {
-            type: "message",
-            role: "assistant",
-            content: [
-              { type: "refusal", refusal: "Private provider explanation." },
-            ],
-          },
-        ],
-      }),
-    /declined/,
-  );
-});
-
-test("text attachments survive saving and are included in subsequent questions", async () => {
+test("text attachments survive saving with their original question and follow-up", async () => {
   const files = await readPromptAttachments(
     [new File(["A reader borrows without moving ownership."], "notes.md")],
     [],
   );
-  const first = learningMessages(
-    learningBook,
-    anchor,
-    "Compare this note.",
-    undefined,
-    files,
-  );
-  assert.deepEqual(JSON.parse(first[1].content).attachments, files);
   const discussion = answeredAnnotation(
     anchor,
     "Compare this note.",
@@ -266,10 +97,9 @@ test("text attachments survive saving and are included in subsequent questions",
     followupFiles,
   );
   const restored = parseAnnotations(JSON.stringify(updated))[0];
-  const next = learningMessages(learningBook, anchor, "Why?", restored);
-  assert.deepEqual(JSON.parse(next[1].content).attachments, files);
-  assert.deepEqual(JSON.parse(next[3].content).attachments, followupFiles);
-  assert.equal(next.at(-1)?.content, "Why?");
+  assert.deepEqual(restored.attachments, files);
+  assert.deepEqual(restored.messages[1].attachments, followupFiles);
+  assert.equal(restored.messages[1].text, "Explain this example.");
   assert.equal(restored.text, "Compare this note.");
 });
 
@@ -335,41 +165,4 @@ test("prompt options use real provider capabilities without suggesting unrelated
     ["my-model"],
   );
   assert.equal(custom.defaultEffort, "default");
-});
-
-test("provider failures and empty output preserve the question and do not leak response bodies", async () => {
-  let status = 401;
-  const server = createServer((_req, res) => {
-    res.statusCode = status;
-    res.end(
-      status === 200
-        ? JSON.stringify(responseFixture(""))
-        : "provider echoed test-only-secret",
-    );
-  });
-  server.listen(0, "127.0.0.1");
-  await once(server, "listening");
-  try {
-    const address = server.address();
-    assert.ok(address && typeof address !== "string");
-    const config = {
-      baseUrl: `http://127.0.0.1:${address.port}/v1`,
-      model: "test-model",
-      apiKey: "",
-    };
-    const messages = learningMessages(learningBook, anchor, "Why?");
-    await assert.rejects(
-      requestModel(config, messages),
-      (error) =>
-        error instanceof Error &&
-        error.message.includes("API key") &&
-        !error.message.includes("test-only-secret"),
-    );
-    status = 200;
-    await assert.rejects(requestModel(config, messages), /returned no text/);
-    assert.equal(JSON.parse(messages[1].content).question, "Why?");
-  } finally {
-    server.close();
-    await once(server, "close");
-  }
 });

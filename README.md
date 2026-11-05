@@ -23,7 +23,7 @@ pnpm install --frozen-lockfile
 pnpm desktop
 ```
 
-For a browser preview, run `pnpm dev`. Connect your own model service in Settings to use AI conversations.
+For a UI preview in the browser, run `pnpm dev`. AI conversations and model configuration require the desktop app (`pnpm desktop`), where the Rust Tutor handles all model requests.
 
 ## License
 

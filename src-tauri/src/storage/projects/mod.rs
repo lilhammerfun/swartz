@@ -1,3 +1,13 @@
+//! Project library persistence, validation, and atomic file replacement.
+//!
+//! This module owns the JSON document shape and exports the records returned to callers.
+
+mod data;
+
+pub(crate) use data::{LibraryChange, LibrarySnapshot, Project, ProjectDetail};
+
+use tauri::Manager;
+
 use std::{
     collections::HashSet,
     fs,
@@ -9,19 +19,17 @@ use std::{
     },
 };
 
-use super::data::{
-    LibraryChange, LibraryData, LibrarySection, LibrarySnapshot, PlanNode, Project, ProjectDetail,
-};
+use self::data::{LibraryData, LibrarySection, PlanNode};
 static LIBRARY_WRITE: Mutex<()> = Mutex::new(());
 static NEXT_WRITE: AtomicU64 = AtomicU64::new(0);
 
 /// Reads legacy arrays; the first mutation writes the complete document with sections and projects.
-pub(super) struct ProjectStore {
+pub(crate) struct ProjectStore {
     path: PathBuf,
 }
 
 impl ProjectStore {
-    pub(super) fn new(path: PathBuf) -> Self {
+    pub(crate) fn new(path: PathBuf) -> Self {
         Self { path }
     }
 
@@ -50,7 +58,7 @@ impl ProjectStore {
         Ok(data)
     }
 
-    pub(super) fn list(&self) -> Result<Vec<Project>, String> {
+    pub(crate) fn list(&self) -> Result<Vec<Project>, String> {
         Ok(self
             .read()?
             .projects
@@ -59,7 +67,7 @@ impl ProjectStore {
             .collect())
     }
 
-    pub(super) fn get(&self, project_id: &str) -> Result<ProjectDetail, String> {
+    pub(crate) fn get(&self, project_id: &str) -> Result<ProjectDetail, String> {
         if !valid_id(project_id) {
             return Err("Enter a valid project ID.".into());
         }
@@ -69,11 +77,11 @@ impl ProjectStore {
             .find(|detail| detail.project.id == project_id)
             .ok_or_else(|| "This project could not be found.".into())
     }
-    pub(super) fn library(&self) -> Result<LibrarySnapshot, String> {
+    pub(crate) fn library(&self) -> Result<LibrarySnapshot, String> {
         Ok(snapshot(self.read()?))
     }
 
-    pub(super) fn update(&self, change: LibraryChange) -> Result<LibrarySnapshot, String> {
+    pub(crate) fn update(&self, change: LibraryChange) -> Result<LibrarySnapshot, String> {
         // Serialize the entire read-modify-write operation to prevent concurrent commands from losing updates.
         let _guard = LIBRARY_WRITE
             .lock()
@@ -302,3 +310,31 @@ fn validate_library(data: &LibraryData) -> Result<(), String> {
     }
     validate(&data.projects)
 }
+
+pub(crate) fn open(app: &tauri::AppHandle) -> Result<ProjectStore, String> {
+    // Development tests use an isolated file with the same Rust reads and validation; release builds ignore it.
+    #[cfg(debug_assertions)]
+    if let Some(path) = std::env::var_os("SWARTZ_PROJECTS_FILE") {
+        return Ok(ProjectStore::new(path.into()));
+    }
+    // Rust resolves project storage in the app data directory; the frontend cannot supply a file path.
+    let directory = app
+        .path()
+        .app_local_data_dir()
+        .map_err(|_| "Could not locate the project data directory.".to_string())?;
+    Ok(ProjectStore::new(directory.join("projects.json")))
+}
+
+/// Internal application access; Tutor tools do not call frontend IPC commands.
+pub(crate) async fn load_detail(
+    app: &tauri::AppHandle,
+    project_id: String,
+) -> Result<ProjectDetail, String> {
+    let store = open(app)?;
+    tauri::async_runtime::spawn_blocking(move || store.get(&project_id))
+        .await
+        .map_err(|_| "Could not finish reading the project details.".to_string())?
+}
+
+#[cfg(test)]
+mod tests;

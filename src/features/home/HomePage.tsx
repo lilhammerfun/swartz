@@ -14,6 +14,7 @@ export interface HomeComposerProps {
   onSettings: () => void;
   onConfigure?: () => void;
   onSend: (submission: PromptSubmission) => Promise<boolean>;
+  onCancel?: () => void;
   attachments?: PromptAttachment[];
   onAttachmentsChange?: (attachments: PromptAttachment[]) => void;
 }

@@ -6,6 +6,7 @@ import {
   LoaderCircle,
   Plus,
   Settings2,
+  Square,
   X,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -53,6 +54,7 @@ export function QuestionInput({
   error,
   onSettings,
   onSend,
+  onCancel,
   placeholder,
   label,
   attachments,
@@ -74,6 +76,7 @@ export function QuestionInput({
   error?: string;
   onSettings: () => void;
   onSend: (submission: PromptSubmission) => Promise<boolean>;
+  onCancel?: () => void;
 }) {
   const availabilityId = useId();
   const form = useRef<HTMLFormElement>(null);
@@ -293,14 +296,23 @@ export function QuestionInput({
               </DropdownMenuContent>
             </DropdownMenu>
             <InputGroupButton
-              type="submit"
+              type={pending && onCancel ? "button" : "submit"}
               size="icon-sm"
               variant="outline"
               className="rounded-full"
-              aria-label={pending ? "Sending question" : "Send"}
-              disabled={!canSend}
+              aria-label={
+                pending && onCancel
+                  ? "Stop response"
+                  : pending
+                    ? "Sending question"
+                    : "Send"
+              }
+              disabled={pending && onCancel ? false : !canSend}
+              onClick={pending && onCancel ? onCancel : undefined}
             >
-              {pending ? (
+              {pending && onCancel ? (
+                <Square />
+              ) : pending ? (
                 <LoaderCircle className="animate-spin" />
               ) : (
                 <ArrowUp />

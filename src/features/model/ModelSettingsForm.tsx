@@ -28,6 +28,7 @@ export function ModelSettingsForm({
   loadError: string;
   onSave: (input: ModelConfig) => Promise<void>;
 }) {
+  const backendAvailable = isTauri();
   const [baseUrl, setBaseUrl] = useState(settings.baseUrl);
   const [model, setModel] = useState(settings.model);
   const [apiKey, setApiKey] = useState("");
@@ -56,7 +57,7 @@ export function ModelSettingsForm({
       }}
       onSubmit={(event) => {
         event.preventDefault();
-        if (saving) return;
+        if (saving || !backendAvailable) return;
         setSaving(true);
         setSaved(false);
         setError("");
@@ -94,7 +95,7 @@ export function ModelSettingsForm({
               type="url"
               value={baseUrl}
               onChange={(event) => setBaseUrl(event.currentTarget.value)}
-              disabled={saving}
+              disabled={saving || !backendAvailable}
               required
               placeholder="e.g. https://api.deepseek.com"
               aria-describedby="model-base-url-description"
@@ -122,7 +123,7 @@ export function ModelSettingsForm({
               id="model-id"
               value={model}
               onChange={(event) => setModel(event.currentTarget.value)}
-              disabled={saving}
+              disabled={saving || !backendAvailable}
               required
               placeholder="e.g. deepseek-flash"
               aria-describedby="model-id-description"
@@ -143,9 +144,9 @@ export function ModelSettingsForm({
                 id="model-api-key-description"
                 className="text-xs leading-5"
               >
-                {isTauri()
+                {backendAvailable
                   ? "Stored securely in your system keyring."
-                  : "Settings stay in memory for this preview session."}
+                  : "Open the desktop app to configure model access."}
               </FieldDescription>
             </FieldContent>
             <Input
@@ -153,7 +154,7 @@ export function ModelSettingsForm({
               type="password"
               value={apiKey}
               onChange={(event) => setApiKey(event.currentTarget.value)}
-              disabled={saving}
+              disabled={saving || !backendAvailable}
               required={!keepingKey && !isLocalBase(baseUrl)}
               placeholder={
                 keepingKey ? "Leave blank to keep the saved key" : "API key"
@@ -179,7 +180,9 @@ export function ModelSettingsForm({
           variant="outline"
           type="submit"
           size="sm"
-          disabled={saving || !model.trim() || !baseUrl.trim()}
+          disabled={
+            saving || !backendAvailable || !model.trim() || !baseUrl.trim()
+          }
         >
           {saving && <LoaderCircle className="animate-spin" />}Save changes
         </Button>

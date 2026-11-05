@@ -221,9 +221,11 @@ export default function App() {
       .catch((error) => {
         if (active)
           setModelLoadError(
-            typeof error === "string"
-              ? error
-              : "Could not load model settings.",
+            error instanceof Error
+              ? error.message
+              : typeof error === "string"
+                ? error
+                : "Could not load model settings.",
           );
       });
     return () => {
@@ -648,6 +650,9 @@ export default function App() {
         onSettings={() => navigate({ scale: "settings" })}
         onConfigure={() => navigate({ scale: "settings" })}
         onSend={sendOrdinaryQuestion}
+        onCancel={() => {
+          void chat.cancel();
+        }}
         onRetry={
           session.request && session.request.status !== "pending"
             ? () => {
@@ -655,7 +660,7 @@ export default function App() {
                   navigate({ scale: "settings" });
                   return;
                 }
-                void chat.retry(session.id, session.bookId ? book : undefined, {
+                void chat.retry(session.id, {
                   ...session.request!.options,
                   model: promptChoices(modelSettings).models.some(
                     (model) => model.id === session.request!.options.model,

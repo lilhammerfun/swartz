@@ -314,7 +314,7 @@ export function settleQuestion(
   storage: ChatStorage,
   sessionId: string,
   userMessageId: string,
-  result: { answer: string } | { error: string },
+  result: { answer: string } | { error: string } | { cancelled: true },
   requestId?: string,
 ) {
   return updateChat(storage, (snapshot) => {
@@ -337,6 +337,10 @@ export function settleQuestion(
       });
       session.updatedAt = new Date().toISOString();
       delete session.request;
+    } else if ("cancelled" in result) {
+      session.request.status = "interrupted";
+      session.request.error =
+        "The Tutor run was cancelled. You can retry your question.";
     } else {
       session.request.status = "error";
       session.request.error = result.error.slice(0, 2000);
