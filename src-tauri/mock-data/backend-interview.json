@@ -2,36 +2,36 @@
   {
     "project": {
       "id": "project-backend-interview",
-      "title": "后端面试准备",
-      "description": "围绕后端机制与取舍展开讨论，形成自己的系统性教材。"
+      "title": "Backend Interview Preparation",
+      "description": "Explore backend mechanisms and tradeoffs to build a structured personal textbook."
     },
     "goal": {
       "projectId": "project-backend-interview",
       "version": 1,
-      "content": "准备后端面试，能够解释主要机制、分析取舍，并通过对话沉淀自己的 textbook。"
+      "content": "Prepare for backend interviews by explaining core mechanisms, analyzing tradeoffs, and turning discussions into a personal textbook."
     },
     "plan": {
       "projectId": "project-backend-interview",
       "version": 3,
-      "overview": "先从数据库的具体问题展开，再联系缓存与并发场景；顺序可以随讨论调整。",
+      "overview": "Start with concrete database questions, then connect them to caching and concurrency. Adjust the order as the discussion develops.",
       "nodes": [
         {
           "id": "mysql",
           "title": "MySQL",
-          "description": "围绕数据访问与并发问题探索数据库机制。",
+          "description": "Explore database mechanisms through data access and concurrency questions.",
           "status": null,
           "children": [
             {
               "id": "index",
-              "title": "索引与查询",
-              "description": "从查询示例讨论索引如何影响数据访问。",
+              "title": "Indexes and Queries",
+              "description": "Use query examples to discuss how indexes affect data access.",
               "status": "completed",
               "children": []
             },
             {
               "id": "transaction",
-              "title": "事务与隔离",
-              "description": "从并发读写的例子讨论隔离与实现机制。",
+              "title": "Transactions and Isolation",
+              "description": "Use concurrent reads and writes to discuss isolation and its implementation.",
               "status": "in_progress",
               "children": []
             }
@@ -40,13 +40,13 @@
         {
           "id": "redis",
           "title": "Redis",
-          "description": "结合具体使用场景讨论缓存。",
+          "description": "Discuss caching through concrete use cases.",
           "status": null,
           "children": [
             {
               "id": "cache-consistency",
-              "title": "缓存一致性",
-              "description": "讨论缓存与数据库更新时可能出现的问题。",
+              "title": "Cache Consistency",
+              "description": "Discuss problems that can arise when updating caches and databases.",
               "status": "pending",
               "children": []
             }
@@ -57,23 +57,23 @@
     "textbook": {
       "id": "textbook-backend",
       "projectId": "project-backend-interview",
-      "title": "我的后端知识笔记",
-      "subtitle": "从具体问题整理出的解释与联系",
+      "title": "My Backend Notes",
+      "subtitle": "Explanations and connections built from concrete questions",
       "version": 1,
       "chapters": [
         {
           "id": "database",
-          "title": "数据库",
-          "purpose": "整理已经讨论并确认沉淀的内容。",
+          "title": "Databases",
+          "purpose": "Organize material that has been discussed and approved for inclusion.",
           "sections": [
             {
               "id": "index-query",
-              "title": "从查询理解索引",
+              "title": "Understanding Indexes Through Queries",
               "subtitle": "",
               "paragraphs": [
                 {
                   "id": "index-example",
-                  "text": "讨论索引时，先明确具体查询需要访问哪些数据，再比较不同访问方式。",
+                  "text": "When discussing indexes, first identify the data a query needs, then compare access methods.",
                   "kind": "prose"
                 }
               ]
@@ -87,7 +87,7 @@
         "id": "activity-goal",
         "projectId": "project-backend-interview",
         "kind": "goal_updated",
-        "description": "确定以解释后端机制与取舍为目标。",
+        "description": "Established the goal of explaining backend mechanisms and tradeoffs.",
         "occurredAt": "2026-10-25T01:00:00Z",
         "sessionId": "session-backend-1",
         "toolCallId": "call-update-goal"
@@ -96,7 +96,7 @@
         "id": "activity-plan",
         "projectId": "project-backend-interview",
         "kind": "plan_updated",
-        "description": "将事务与隔离设为当前探索内容。",
+        "description": "Selected transactions and isolation as the current exploration topic.",
         "occurredAt": "2026-10-25T01:10:00Z",
         "sessionId": "session-backend-1",
         "toolCallId": "call-update-plan"
@@ -105,7 +105,7 @@
         "id": "activity-textbook",
         "projectId": "project-backend-interview",
         "kind": "textbook_revised",
-        "description": "将已讨论的索引解释整理进教材。",
+        "description": "Added the discussed explanation of indexes to the textbook.",
         "occurredAt": "2026-10-25T01:20:00Z",
         "sessionId": "session-backend-1",
         "toolCallId": "call-update-textbook"

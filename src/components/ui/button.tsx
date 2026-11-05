@@ -8,7 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // 操作按钮统一使用描边或文字，通过边框和文字表达交互状态。
+        // Use outline or text action buttons, expressing interaction states through their borders and text.
         default:
           "border-border text-foreground hover:border-foreground/40 aria-expanded:border-foreground/40",
         surface: "button-surface border-border text-foreground",

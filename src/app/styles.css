@@ -5,7 +5,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* 使用黑白灰中性主题；活动状态颜色仅表达业务状态。 */
+/* Use neutral black, white, and gray tones; active-state colors convey business status only. */
 :root {
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -389,7 +389,7 @@ body {
   padding: 32px 40px 56px;
 }
 
-/* 书架只展示书封；书名和简介不再重复放在封面下方。 */
+/* Display book covers without repeating their titles and descriptions below them. */
 .library-bookshelf {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -610,7 +610,7 @@ body {
   line-height: 1.8;
   color: var(--muted-foreground);
 }
-/* Surface 是现有 Button 的本地变体，使用应用令牌适配明暗主题。 */
+/* Surface is a local Button variant using app tokens for light and dark themes. */
 .button-surface {
   border-color: color-mix(in oklab, var(--border), var(--foreground) 8%);
 }
@@ -636,7 +636,7 @@ body {
 .project-plan {
   margin-top: 44px;
 }
-/* 页面保持单列；宽屏放大封面，正文仍保留适合阅读的行宽。 */
+/* Keep a single column; enlarge covers on wide screens while retaining a readable text width. */
 @container project-detail (min-width: 1120px) {
   .project-heading {
     grid-template-columns: 144px minmax(0, 1fr);
@@ -1095,7 +1095,7 @@ body {
   }
 }
 
-/* 页头集中展示搜索和管理操作，选择模式复用同一操作区。 */
+/* Keep search and management actions in the header; selection mode reuses the same action area. */
 .library-page-header {
   display: flex;
   align-items: flex-start;

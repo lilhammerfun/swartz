@@ -1,0 +1,107 @@
+{
+  "requests": {
+    "ordinary": {
+      "target": { "kind": "unassigned", "conversationId": "chat-home" },
+      "requestId": "attempt-home-1",
+      "input": {
+        "kind": "question",
+        "message": {
+          "id": "question-home-1",
+          "role": "user",
+          "text": "I'd like an introduction to Rust.",
+          "createdAt": "2026-11-04T10:00:00+08:00"
+        }
+      },
+      "history": [],
+      "options": {}
+    },
+    "quoted": {
+      "target": { "kind": "project", "projectId": "project-rust" },
+      "requestId": "attempt-rust-2",
+      "input": {
+        "kind": "question",
+        "message": {
+          "id": "question-rust-2",
+          "role": "user",
+          "text": "In yesterday's example, why can't both references write at the same time?",
+          "createdAt": "2026-11-04T10:00:00+08:00",
+          "attachments": [
+            {
+              "id": "notes-1",
+              "name": "notes.md",
+              "text": "Both callers want to modify the same value."
+            }
+          ],
+          "passage": {
+            "bookId": "project-rust",
+            "chapterId": "borrowing",
+            "sectionId": "mutable",
+            "paragraphId": "exclusive-access",
+            "version": 2,
+            "quote": "A mutable reference grants exclusive access."
+          }
+        }
+      },
+      "history": [
+        {
+          "id": "question-rust-1",
+          "role": "user",
+          "text": "What is borrowing useful for?",
+          "createdAt": "2026-11-03T20:00:00+08:00"
+        },
+        {
+          "id": "answer-rust-1",
+          "role": "assistant",
+          "text": "It allows access to a value while its original owner keeps ownership.",
+          "createdAt": "2026-11-03T20:00:05+08:00"
+        }
+      ],
+      "options": { "model": "configured-model", "reasoningEffort": "low" }
+    },
+    "startLearning": {
+      "target": { "kind": "project", "projectId": "project-rust" },
+      "requestId": "attempt-guidance-1",
+      "input": { "kind": "start_learning" },
+      "history": [
+        {
+          "id": "question-rust-1",
+          "role": "user",
+          "text": "What is borrowing useful for?",
+          "createdAt": "2026-11-03T20:00:00+08:00"
+        },
+        {
+          "id": "answer-rust-1",
+          "role": "assistant",
+          "text": "It allows access to a value while its original owner keeps ownership.",
+          "createdAt": "2026-11-03T20:00:05+08:00"
+        }
+      ],
+      "options": {}
+    }
+  },
+  "results": [
+    {
+      "target": { "kind": "unassigned", "conversationId": "chat-home" },
+      "requestId": "attempt-home-1",
+      "userMessageId": "question-home-1",
+      "outcome": {
+        "status": "completed",
+        "text": "We can start with a small example."
+      }
+    },
+    {
+      "target": { "kind": "project", "projectId": "project-rust" },
+      "requestId": "attempt-rust-2",
+      "userMessageId": "question-rust-2",
+      "outcome": {
+        "status": "failed",
+        "error": "The model provider is temporarily unavailable."
+      }
+    },
+    {
+      "target": { "kind": "project", "projectId": "project-rust" },
+      "requestId": "attempt-guidance-1",
+      "outcome": { "status": "cancelled" }
+    }
+  ]
+}

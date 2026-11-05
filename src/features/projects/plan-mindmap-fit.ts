@@ -1,4 +1,4 @@
-/** 页面以宽度决定比例并展开高度；全屏受宽高共同约束。尺寸均为未缩放的布局值。 */
+/** Pages scale to width and grow vertically; fullscreen fits both dimensions. Sizes use unscaled layout units. */
 export function planMapFit(
   mapWidth: number,
   mapHeight: number,

@@ -6,7 +6,7 @@ import type { ReadingDocument } from "@/features/reader/ReadingDocument";
 import type { LearningBook } from "@/types/book";
 import type { ProjectDetail } from "@/features/projects/project-data";
 
-// 共享布局持有持续运行的会话和草稿，子路由只接收渲染所需接口。
+// The shared layout owns active conversations and drafts; child routes receive only their rendering interface.
 export interface AppRouteContext {
   home: ComponentProps<typeof HomePage>;
   library: ComponentProps<typeof LibraryPage>;

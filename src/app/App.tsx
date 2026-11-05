@@ -121,7 +121,7 @@ export default function App() {
   const navigation = useNavigation();
   const navigationType = useNavigationType();
   const matches = useMatches();
-  // 继续兼容旧阅读位置数据；页面匹配来自 Router 的实际匹配结果。
+  // Preserve legacy reading locations; page matching uses the router's actual matches.
   const location = useMemo<ReaderLocation>(() => {
     const match = [...matches]
       .reverse()
@@ -132,7 +132,7 @@ export default function App() {
     return match
       ? (match.handle as ReaderRouteHandle).readerLocation(match.params)
       : { scale: "home" };
-    // 数据重验证不改变页面位置，保留异步操作用于判定用户是否已离开的身份。
+    // Revalidation keeps the current location, so preserve its identity for detecting navigation during async work.
   }, [routerLocation.pathname]);
   const routeBook = matches
     .map(
@@ -144,11 +144,11 @@ export default function App() {
     typeof window.history.state?.idx === "number"
       ? (window.history.state.idx as number)
       : 0;
-  // 只跟踪标题栏按钮可用性；实际历史、跳转和 POP 行为由 Router 管理。
+  // Track title-bar button availability only; the router owns history, navigation, and POP behavior.
   const [lastHistoryIndex, setLastHistoryIndex] = useState(historyIndex);
   useEffect(() => {
-    // POP 导航等待 loader 时，浏览器索引已改变，Router 的旧页面尚未提交。
-    // 只在 location 提交后更新按钮边界，不能把等待期间的索引当作新的 PUSH。
+    // During a POP loader, the browser index has changed but the router still displays the previous page.
+    // Update button bounds only after the location commits; a pending index must not be treated as a new PUSH.
     const committedIndex =
       typeof window.history.state?.idx === "number"
         ? (window.history.state.idx as number)
@@ -162,7 +162,7 @@ export default function App() {
   const storedLibrary = useLibrary(starterBook);
   const projects = useProjects();
   const integrations = useBookIntegrations();
-  // Project 的详情进入现有阅读器；保留旧书数据以兼容原有会话和引用。
+  // Feed project details into the existing reader while preserving legacy books for conversations and references.
   const projectBooks = projects.projects.map((project) =>
     projectBook(project, projects.details[project.id]),
   );
@@ -412,7 +412,7 @@ export default function App() {
     void projects
       .loadDetail(project.id)
       .then((detail) => {
-        // 读取期间用户已切换页面时，不让晚到响应把页面拉回。
+        // A late response must not navigate back after the user has left the page.
         if (locationRef.current === origin)
           navigateToBook(integrations.project(projectBook(project, detail)));
       })

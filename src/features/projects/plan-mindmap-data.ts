@@ -6,7 +6,7 @@ export interface PlanMapMetadata {
   status: ExplorationStatus | null;
 }
 
-/** 图形库会向节点写入 parent、expanded 等字段，因此只传递展示层的独立副本。 */
+/** The graph library adds fields such as parent and expanded; give it an isolated presentation copy. */
 export function planMindmapData(
   projectId: string,
   title: string,

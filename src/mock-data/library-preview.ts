@@ -2,7 +2,7 @@ import type { LibrarySnapshot } from "../features/projects/project-data.ts";
 
 export type PreviewLibrary = LibrarySnapshot & { fixtureRevision?: number };
 
-/** 只扩充开发演示目录；保留用户已整理的分区、名称和明确指定的归属。 */
+/** Expand only the development demo catalog, preserving user sections, names, and explicit assignments. */
 export function mergePreviewLibrary(
   saved: PreviewLibrary | null,
   fixture: PreviewLibrary,

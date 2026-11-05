@@ -10,12 +10,12 @@ use store::ProjectStore;
 mod tests;
 
 fn project_store(app: &tauri::AppHandle) -> Result<ProjectStore, String> {
-    // 开发测试使用独立文件，仍经过相同的 Rust 读取和校验；正式构建忽略此变量。
+    // Development tests use an isolated file with the same Rust reads and validation; release builds ignore it.
     #[cfg(debug_assertions)]
     if let Some(path) = std::env::var_os("SWARTZ_PROJECTS_FILE") {
         return Ok(ProjectStore::new(path.into()));
     }
-    // 项目数据由 Rust 读取应用数据目录，不接受前端传入的文件路径。
+    // Rust resolves project storage in the app data directory; the frontend cannot supply a file path.
     let directory = app
         .path()
         .app_local_data_dir()
@@ -23,7 +23,7 @@ fn project_store(app: &tauri::AppHandle) -> Result<ProjectStore, String> {
     Ok(ProjectStore::new(directory.join("projects.json")))
 }
 
-/// Library 只返回元数据，不把正文传给列表。
+/// Returns Library metadata without sending textbook content to the list.
 #[tauri::command]
 pub async fn get_library(app: tauri::AppHandle) -> Result<LibrarySnapshot, String> {
     let store = project_store(&app)?;
@@ -32,7 +32,7 @@ pub async fn get_library(app: tauri::AppHandle) -> Result<LibrarySnapshot, Strin
         .map_err(|_| "Could not read the library.".to_string())?
 }
 
-/// 整理书架不生成业务 Activity。
+/// Organizing the library does not generate a business Activity.
 #[tauri::command]
 pub async fn update_library(
     app: tauri::AppHandle,
@@ -44,7 +44,7 @@ pub async fn update_library(
         .map_err(|_| "Could not update the library.".to_string())?
 }
 
-/// Library 只需要项目基本信息，不把教材正文、计划或活动日志传给列表页。
+/// Returns basic project information without textbook content, plans, or activity logs.
 #[tauri::command]
 pub async fn list_projects(app: tauri::AppHandle) -> Result<Vec<Project>, String> {
     let store = project_store(&app)?;
@@ -53,7 +53,7 @@ pub async fn list_projects(app: tauri::AppHandle) -> Result<Vec<Project>, String
         .map_err(|_| "Could not finish reading the project library.".to_string())?
 }
 
-/// 详情页汇集当前业务状态与 Activity，不复制或解析 Agent 的原生 session log。
+/// Assembles current business state and Activity without copying or parsing native Agent session logs.
 #[tauri::command]
 pub async fn get_project_detail(
     app: tauri::AppHandle,

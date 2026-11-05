@@ -11,7 +11,7 @@ use super::{
     store::ProjectStore,
 };
 
-const FIXTURE: &str = include_str!("fixtures/backend-interview.json");
+const PROJECT_DATA: &str = include_str!("../../mock-data/backend-interview.json");
 static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
 
 #[test]
@@ -27,7 +27,7 @@ fn development_projects_use_the_same_native_read_contract() {
     }
 }
 
-// 每个测试使用独立临时目录，不读取或覆盖用户的实际项目文件。
+// Each test uses an isolated temporary directory and never reads or overwrites the user's project files.
 struct TestLibrary {
     directory: PathBuf,
     path: PathBuf,
@@ -76,9 +76,9 @@ fn first_launch_is_empty_without_creating_or_seeding_a_library() {
 #[test]
 fn list_returns_only_metadata_and_detail_restores_tree_textbook_and_activities() {
     let library = TestLibrary::new();
-    library.write(FIXTURE);
+    library.write(PROJECT_DATA);
     let list = serde_json::to_value(library.store().list().unwrap()).unwrap();
-    let source: Value = serde_json::from_str(FIXTURE).unwrap();
+    let source: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     assert_eq!(list, json!([source[0]["project"]]));
 
     let detail = library.store().get("project-backend-interview").unwrap();
@@ -99,7 +99,7 @@ fn list_returns_only_metadata_and_detail_restores_tree_textbook_and_activities()
     assert_eq!(detail.activities[2].session_id, "session-backend-1");
     assert_eq!(detail.activities[2].tool_call_id, "call-update-textbook");
 
-    // 同一份数据重新打开仍可读取；接口采用 camelCase，正文与状态无损往返。
+    // Reopening preserves the same data; camelCase fields, content, and state survive a round trip.
     assert_eq!(serde_json::to_value(detail).unwrap(), source[0]);
     assert_eq!(
         library
@@ -110,26 +110,26 @@ fn list_returns_only_metadata_and_detail_restores_tree_textbook_and_activities()
             .len(),
         3
     );
-    assert_eq!(fs::read_to_string(&library.path).unwrap(), FIXTURE);
+    assert_eq!(fs::read_to_string(&library.path).unwrap(), PROJECT_DATA);
 }
 
 #[test]
 fn projects_are_selected_by_id_and_do_not_mix_goals_or_activity_logs() {
     let library = TestLibrary::new();
-    let mut first: Value = serde_json::from_str(FIXTURE).unwrap();
+    let mut first: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     let mut second: Value =
-        serde_json::from_str(&FIXTURE.replace("project-backend-interview", "project-rust"))
+        serde_json::from_str(&PROJECT_DATA.replace("project-backend-interview", "project-rust"))
             .unwrap();
-    second[0]["project"]["title"] = json!("Rust 探索");
-    second[0]["goal"]["content"] = json!("理解所有权");
+    second[0]["project"]["title"] = json!("Exploring Rust");
+    second[0]["goal"]["content"] = json!("Understand ownership");
     second[0]["activities"] = json!([]);
     first.as_array_mut().unwrap().push(second[0].clone());
     library.write(&first.to_string());
 
     assert_eq!(library.store().list().unwrap().len(), 2);
     let detail = library.store().get("project-rust").unwrap();
-    assert_eq!(detail.project.title, "Rust 探索");
-    assert_eq!(detail.goal.content, "理解所有权");
+    assert_eq!(detail.project.title, "Exploring Rust");
+    assert_eq!(detail.goal.content, "Understand ownership");
     assert!(detail.activities.is_empty());
     assert_eq!(
         library
@@ -145,7 +145,7 @@ fn projects_are_selected_by_id_and_do_not_mix_goals_or_activity_logs() {
 #[test]
 fn a_project_can_exist_before_a_goal_plan_or_textbook_has_content() {
     let library = TestLibrary::new();
-    let mut data: Value = serde_json::from_str(FIXTURE).unwrap();
+    let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     data[0]["goal"]["content"] = json!("");
     data[0]["plan"]["overview"] = json!("");
     data[0]["plan"]["nodes"] = json!([]);
@@ -173,7 +173,7 @@ fn invalid_files_and_cross_project_references_are_reported_without_rewriting_byt
         "/0/textbook/projectId",
         "/0/activities/0/projectId",
     ] {
-        let mut data: Value = serde_json::from_str(FIXTURE).unwrap();
+        let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
         *data.pointer_mut(pointer).unwrap() = json!("another-project");
         let bytes = data.to_string();
         library.write(&bytes);
@@ -188,7 +188,7 @@ fn invalid_files_and_cross_project_references_are_reported_without_rewriting_byt
 #[test]
 fn duplicate_identities_and_zero_versions_cannot_appear_as_valid_details() {
     let library = TestLibrary::new();
-    let source: Value = serde_json::from_str(FIXTURE).unwrap();
+    let source: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     let mut cases = vec![json!([source[0], source[0]])];
     for pointer in ["/0/goal/version", "/0/plan/version", "/0/textbook/version"] {
         let mut data = source.clone();
@@ -212,7 +212,7 @@ fn duplicate_identities_and_zero_versions_cannot_appear_as_valid_details() {
 #[test]
 fn unknown_business_activity_kinds_are_not_silently_dropped() {
     let library = TestLibrary::new();
-    let mut data: Value = serde_json::from_str(FIXTURE).unwrap();
+    let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     data[0]["activities"][0]["kind"] = json!("proposal_created");
     let bytes = data.to_string();
     library.write(&bytes);
@@ -223,7 +223,7 @@ fn unknown_business_activity_kinds_are_not_silently_dropped() {
 #[test]
 fn empty_ids_are_rejected_and_project_ids_are_not_used_as_paths() {
     let library = TestLibrary::new();
-    library.write(FIXTURE);
+    library.write(PROJECT_DATA);
     assert_eq!(
         library.store().get(" ").unwrap_err(),
         "Enter a valid project ID."
@@ -234,13 +234,13 @@ fn empty_ids_are_rejected_and_project_ids_are_not_used_as_paths() {
     );
     let directory_store = ProjectStore::new(library.directory.clone());
     assert!(directory_store.list().is_err());
-    assert_eq!(fs::read_to_string(&library.path).unwrap(), FIXTURE);
+    assert_eq!(fs::read_to_string(&library.path).unwrap(), PROJECT_DATA);
 }
 
 #[test]
 fn no_status_or_branch_aggregation_is_invented_by_the_read_api() {
     let library = TestLibrary::new();
-    let mut data: Value = serde_json::from_str(FIXTURE).unwrap();
+    let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     data[0]["plan"]["nodes"][0]["status"] = json!("in_progress");
     data[0]["plan"]["nodes"][0]["children"][0]["status"] = Value::Null;
     library.write(&data.to_string());
@@ -257,7 +257,7 @@ fn no_status_or_branch_aggregation_is_invented_by_the_read_api() {
 fn section_lifecycle_persists_and_does_not_modify_business_state() {
     use super::data::LibraryChange::*;
     let library = TestLibrary::new();
-    library.write(FIXTURE);
+    library.write(PROJECT_DATA);
     let before =
         serde_json::to_value(library.store().get("project-backend-interview").unwrap()).unwrap();
     let result = library
@@ -313,7 +313,7 @@ fn section_lifecycle_persists_and_does_not_modify_business_state() {
 fn invalid_section_operations_leave_saved_bytes_unchanged() {
     use super::data::LibraryChange::*;
     let library = TestLibrary::new();
-    library.write(FIXTURE);
+    library.write(PROJECT_DATA);
     let changes = vec![
         CreateSection {
             id: "x".into(),
@@ -337,7 +337,7 @@ fn invalid_section_operations_leave_saved_bytes_unchanged() {
     ];
     for change in changes {
         assert!(library.store().update(change).is_err());
-        assert_eq!(fs::read_to_string(&library.path).unwrap(), FIXTURE);
+        assert_eq!(fs::read_to_string(&library.path).unwrap(), PROJECT_DATA);
     }
     library.write("invalid");
     assert!(
@@ -374,7 +374,7 @@ fn concurrent_section_writes_do_not_lose_updates() {
 #[test]
 fn dangling_section_references_and_duplicate_sections_are_rejected() {
     let library = TestLibrary::new();
-    let projects: Value = serde_json::from_str(FIXTURE).unwrap();
+    let projects: Value = serde_json::from_str(PROJECT_DATA).unwrap();
     let mut data = json!({"sections": [], "projects": projects});
     data["projects"][0]["project"]["librarySectionId"] = json!("missing");
     library.write(&data.to_string());

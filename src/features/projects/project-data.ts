@@ -1,6 +1,6 @@
 import type { LearningBook } from "../../types/book.ts";
 
-/** 与 Rust projects/data.rs 的读取契约一致；不包含原生会话日志。 */
+/** Mirrors the read contract in Rust projects/data.rs without native session logs. */
 export interface Project {
   id: string;
   title: string;
@@ -59,8 +59,8 @@ export interface ProjectDetail {
 }
 
 /**
- * 兼容现有阅读器和会话的 bookId 路由：工作区以项目 ID 为稳定身份，
- * 即使教材还不存在，也能进入同一个项目会话。教材自身 ID 保留在详情中。
+ * Supports existing reader and conversation bookId routes using the stable project ID,
+ * even before a textbook exists. The textbook's own ID remains in the project detail.
  */
 export function projectBook(
   project: Project,
@@ -75,7 +75,7 @@ export function projectBook(
   };
 }
 
-/** 封面外观由稳定 ID 决定，改名不会导致整张书封换色。 */
+/** Derive cover styling from a stable ID so renaming a project does not change its appearance. */
 export function coverStyle(id: string): number {
   let hash = 0;
   for (const character of id)
@@ -91,7 +91,7 @@ export function recentActivities(
   );
 }
 
-/** 最近使用的项目在前；未访问的项目保持目录顺序，不因分区归属而消失。 */
+/** Order recently used projects first; retain unvisited and unassigned projects in catalog order. */
 export function orderRecentProjects(
   projects: readonly Project[],
   recent: readonly { bookId?: string; updatedAt: string }[],

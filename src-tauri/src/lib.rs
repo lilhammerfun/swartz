@@ -1,3 +1,4 @@
+pub mod conversation;
 mod model;
 mod projects;
 

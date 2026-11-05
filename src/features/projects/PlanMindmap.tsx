@@ -22,7 +22,7 @@ const labels = {
   in_progress: "In progress",
   completed: "Completed",
 };
-// 与应用中的 Lucide Check、Circle、CircleDot 使用相同路径；标题始终由 textContent 渲染。
+// Use the app's Lucide Check, Circle, and CircleDot paths; titles always render through textContent.
 function statusIcon(status: NonNullable<PlanMapMetadata["status"]>) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   for (const [key, value] of Object.entries({
@@ -56,7 +56,7 @@ function statusIcon(status: NonNullable<PlanMapMetadata["status"]>) {
   return svg;
 }
 
-/** 只读 Plan 视图：复用 Mind Elixir 的双侧布局、折叠与画布交互，不写回计划。 */
+/** Read-only Plan view using Mind Elixir's two-sided layout, folding, and canvas controls without writeback. */
 export function PlanMindmap({
   projectId,
   title,
@@ -86,7 +86,7 @@ export function PlanMindmap({
     let frame = 0;
     setSelected(null);
     setError("");
-    // 在挂载后加载，保持 React Router SPA 的预渲染过程不依赖 document。
+    // Load after mounting so React Router SPA prerendering does not depend on document.
     void import("mind-elixir")
       .then(({ default: MindElixir }) => {
         if (disposed) return;
@@ -168,7 +168,7 @@ export function PlanMindmap({
             fullscreen,
           );
           if (!bounds) return;
-          // 普通页面由外层页面滚动，不再把长图压进固定高度。
+          // Let the outer page scroll rather than constraining a long map to a fixed height.
           if (!fullscreen && element.style.height !== `${bounds.height}px`)
             element.style.height = `${bounds.height}px`;
           else if (fullscreen) element.style.removeProperty("height");
@@ -213,7 +213,7 @@ export function PlanMindmap({
           return changed;
         };
         mind.bus.addListener("linkDiv", () => {
-          // 图库默认把路径视为等宽描边；闭合主枝改用同色填充。
+          // The library treats paths as uniform strokes; closed main branches need a matching fill.
           for (const path of element.querySelectorAll<SVGPathElement>(
             ".lines > path",
           )) {
@@ -265,7 +265,7 @@ export function PlanMindmap({
           : null,
       );
     };
-    // 核心库的只读模式同时关闭原生选择和展开点击；只开放本视图需要的两个阅读操作。
+    // Core read-only mode disables selection and expansion clicks; enable only the two reading actions needed here.
     const click = (event: MouseEvent) => {
       const target = (event.target as Element).closest("me-tpc, me-epd");
       if (!target) return;

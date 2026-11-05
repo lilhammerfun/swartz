@@ -23,7 +23,7 @@ import { projectError } from "@/features/projects/useProjects";
 export type SectionAction =
   { kind: "create" } | { kind: "rename" | "delete"; section: LibrarySection };
 
-/** 对具体分区执行单一操作；不把项目移动和分区创建混在一个流程。 */
+/** Performs one section operation without mixing project moves and section creation into the same flow. */
 export function LibrarySectionDialog({
   action,
   saving,

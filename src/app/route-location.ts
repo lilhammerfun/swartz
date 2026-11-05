@@ -1,6 +1,6 @@
 import type { ReaderLocation } from "../types/book.ts";
 
-// 兼容现有阅读器/最近访问记录的数据形状；路径匹配和导航历史交给 React Router。
+// Preserve the reader and recent-location data shapes; React Router owns path matching and navigation history.
 export function locationPath(location: ReaderLocation): string {
   const segment = encodeURIComponent;
   switch (location.scale) {

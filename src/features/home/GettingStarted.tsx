@@ -44,7 +44,7 @@ function loadPreferences(): Preferences {
   }
 }
 
-/** 完成状态读取业务数据；只有展开、隐藏偏好属于这张引导卡片。 */
+/** Completion comes from business data; only expansion and dismissal preferences belong to this card. */
 export function GettingStarted({
   configured,
   projects,
@@ -77,7 +77,7 @@ export function GettingStarted({
     try {
       localStorage.setItem(preferenceKey, JSON.stringify(next));
     } catch {
-      /* 偏好写入失败时仍然显示引导。 */
+      /* Keep onboarding visible if saving preferences fails. */
     }
     onRevealHandled?.();
   }, [reveal, onRevealHandled]);
@@ -92,7 +92,7 @@ export function GettingStarted({
     let active = true;
     setReady(false);
     setFailed(false);
-    // 复用项目详情缓存；一旦找到计划和教材即停止，不为卡片预取整个 Library。
+    // Reuse the detail cache and stop once a plan and textbook are found; do not prefetch the whole Library.
     void (async () => {
       const found: ProjectDetail[] = [];
       let hadFailure = false;
@@ -168,7 +168,7 @@ export function GettingStarted({
     try {
       localStorage.setItem(preferenceKey, JSON.stringify(next));
     } catch {
-      /* 偏好无法落盘时，本次会话仍可正常折叠和隐藏。 */
+      /* Folding and dismissal still work for this session if preferences cannot be saved. */
     }
   };
   if (loading || !ready) return null;

@@ -5,7 +5,7 @@ import { locationPath } from "@/app/route-location";
 export default function WorkspaceIndex() {
   const { book } = useOutletContext<AppRouteContext>();
   const chapter = book.chapters.find((chapter) => chapter.sections.length > 0);
-  // 直接打开工作区根路径时，有正文就进入第一节；空教材才展示空状态。
+  // Open the first section when entering a workspace root; show the empty state only when no content exists.
   if (chapter) {
     return (
       <Navigate

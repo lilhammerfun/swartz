@@ -58,7 +58,7 @@ export function LibraryPage({
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
   const section = sections.find((item) => item.id === sectionId);
-  // Recent 是所有项目的系统视图，不能用空分区归属来过滤。
+  // Recent is a system view of all projects; do not filter it by an empty section assignment.
   const visible = section
     ? projects.filter((item) => item.librarySectionId === section.id)
     : orderRecentProjects(projects, recent);

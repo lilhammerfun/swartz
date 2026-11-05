@@ -53,7 +53,7 @@ export function useProjects() {
     if (cache.current[id]) return Promise.resolve(cache.current[id]);
     const existing = pending.current.get(id);
     if (existing) return existing;
-    // 同一项目同时被详情和工作区请求时，复用读取；响应始终按 ID 缓存。
+    // Deduplicate concurrent detail and workspace reads of the same project; cache responses by ID.
     const request = getProjectDetail(id)
       .then((detail) => {
         cache.current[id] = detail;
@@ -80,7 +80,7 @@ export function useProjects() {
         const next = await updateLibrary(change);
         setProjects(next.projects);
         setSections(next.sections);
-        // 同步详情缓存中的归属信息，不触碰教材、计划或业务日志。
+        // Sync assignments in cached details without changing textbook content, plans, or business logs.
         for (const project of next.projects) {
           if (cache.current[project.id])
             cache.current[project.id] = {

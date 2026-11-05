@@ -28,7 +28,7 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-// SPA 根页面在构建时只渲染此回退；App 中的本地存储和原生 API 仅在客户端执行。
+// Prerender only this SPA fallback; App storage and native APIs run exclusively on the client.
 export function HydrateFallback() {
   return <RouteLoading />;
 }

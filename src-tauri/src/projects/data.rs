@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// 接口中的 ID 是不透明字符串；项目与节点的 ID 不能通过标题推导。
+/// IDs are opaque strings; project and node IDs must not be derived from titles.
 pub type ProjectId = String;
 pub type PlanNodeId = String;
 
@@ -9,9 +9,9 @@ pub type PlanNodeId = String;
 pub struct Project {
     pub id: ProjectId,
     pub title: String,
-    /// 列表中的简短介绍，不替代用户的 Goal。
+    /// A short listing description, not a replacement for the learner's Goal.
     pub description: String,
-    /// Library 的组织位置；不属于教材内容，也不生成业务 Activity。
+    /// Library placement is separate from textbook content and does not produce an Activity.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub library_section_id: Option<String>,
 }
@@ -23,7 +23,7 @@ pub struct LibrarySection {
     pub name: String,
 }
 
-/// 分区和项目归属同文件提交，删除分区时不会留下悬空引用。
+/// Sections and project assignments share one file, so deleting a section cannot leave dangling references.
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(super) struct LibraryData {
@@ -52,7 +52,7 @@ pub enum LibraryChange {
     DeleteSection {
         id: String,
     },
-    /// 整批移动一次提交；任何项目失效时整批都不写入。
+    /// Move the entire batch in one write; any invalid project prevents all changes.
     MoveProjects {
         #[serde(rename = "projectIds")]
         project_ids: Vec<String>,
@@ -71,9 +71,9 @@ pub enum LibraryChange {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Goal {
     pub project_id: ProjectId,
-    /// 当前状态的写入版本；不承诺存在可查询的历史快照。
+    /// Version of the current state; this does not imply that historical snapshots can be queried.
     pub version: u64,
-    /// 当前目标正文，可使用 Markdown；尚未形成目标时为空。
+    /// Current goal content, optionally in Markdown; empty until a goal has been established.
     pub content: String,
 }
 
@@ -81,23 +81,23 @@ pub struct Goal {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Plan {
     pub project_id: ProjectId,
-    /// 整份计划的状态版本，节点暂不单独维护版本。
+    /// Version of the whole plan; nodes do not currently have separate versions.
     pub version: u64,
     pub overview: String,
-    /// 有序的根节点列表；直接嵌套 children，不额外保存 parent_id 或 links。
+    /// Ordered root nodes with nested children; no separate parent_id or links are stored.
     pub nodes: Vec<PlanNode>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PlanNode {
-    /// 在本 Plan 内唯一，改名和移动时保持不变。
+    /// Unique within this Plan and stable across renaming or moving the node.
     pub id: PlanNodeId,
     pub title: String,
-    /// 说明准备探究什么，不作为用户必须审定的完成标准。
+    /// Describes what to explore, not completion criteria the learner must approve.
     pub description: String,
-    /// 显式记录的探索状态；None 表示尚未设置。
-    /// 本轮读取接口不推导父节点状态，也不强制“仅叶子能有状态”。
+    /// Explicit exploration status; None means no status has been set.
+    /// This read API neither derives parent status nor restricts status to leaf nodes.
     pub status: Option<ExplorationStatus>,
     pub children: Vec<PlanNode>,
 }
@@ -110,8 +110,8 @@ pub enum ExplorationStatus {
     Completed,
 }
 
-/// 本轮沿用现有阅读器的章节、段落形状，仅映射到 Rust。
-/// 这里返回当前教材；历史版本管理不在此次读取接口中实现。
+/// Preserves the existing reader's chapter and paragraph shapes in Rust.
+/// Returns the current textbook; historical version management is outside this read API.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Textbook {
@@ -162,12 +162,12 @@ pub enum ParagraphKind {
 pub struct Activity {
     pub id: String,
     pub project_id: ProjectId,
-    /// 成功发生的业务事实，不是工具执行的中间状态。
+    /// A successful business change, not an intermediate tool execution state.
     pub kind: ActivityKind,
     pub description: String,
-    /// RFC 3339 时间；读取时保留原始时间与记录顺序。
+    /// RFC 3339 timestamp; reads preserve the original time and record order.
     pub occurred_at: String,
-    /// 只保存追溯标识，不把原生会话消息和工具日志复制到 Activity。
+    /// Traceability IDs only; native session messages and tool logs are not copied into Activity.
     pub session_id: String,
     pub tool_call_id: String,
 }
@@ -180,15 +180,15 @@ pub enum ActivityKind {
     TextbookRevised,
 }
 
-/// 页面读取结果：汇集项目已有数据，不意味着把所有对象合并为一个业务实体。
+/// A page-level read result that assembles existing data without merging its business entities.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ProjectDetail {
     pub project: Project,
     pub goal: Goal,
     pub plan: Plan,
-    /// 尚未开始编撰时为 None，不伪造教材和章节。
+    /// None until writing starts; no textbook or chapters are fabricated.
     pub textbook: Option<Textbook>,
-    /// 业务操作产生的项目历史；没有操作时返回空列表。
+    /// Project history from business operations; empty until such operations occur.
     pub activities: Vec<Activity>,
 }

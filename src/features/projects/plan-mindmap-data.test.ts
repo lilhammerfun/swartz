@@ -77,7 +77,7 @@ test("branch endpoints join across both levels without doubling back on either s
         isFirst: true,
       }),
     );
-    // 主枝有宽度，中心线必须恰好接到子枝的起点。
+    // Main branches have width; their centerline must meet the child branch's start exactly.
     assert.equal(main[6], branch[0]);
     assert.equal((main[7] + main[9]) / 2, branch[1]);
     const next = coordinates(

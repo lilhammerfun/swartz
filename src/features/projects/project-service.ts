@@ -29,7 +29,7 @@ export async function updateLibrary(
 ): Promise<LibrarySnapshot> {
   if (isTauri()) return invoke("update_library", { change });
   const library = await getLibrary();
-  // 开发预览也持久化整理结果；桌面实际写入由 Rust 完成。
+  // Browser previews also persist organization changes; Rust handles actual desktop writes.
   switch (change.kind) {
     case "create_section":
       library.sections.push({ id: change.id, name: change.name.trim() });
@@ -78,7 +78,7 @@ export async function updateLibrary(
 }
 
 async function previewProjects(): Promise<ProjectDetail[]> {
-  // 只在开发浏览器里加载 fixture；正式桌面始终通过 Rust 读取项目。
+  // Load fixtures only in the development browser; desktop builds always read projects through Rust.
   if (import.meta.env.DEV) {
     const base = (await import("../../mock-data/projects.json"))
       .default as ProjectDetail[];

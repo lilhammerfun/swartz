@@ -15,7 +15,7 @@ use super::data::{
 static LIBRARY_WRITE: Mutex<()> = Mutex::new(());
 static NEXT_WRITE: AtomicU64 = AtomicU64::new(0);
 
-/// 兼容旧数组格式；首次修改时保存分区和项目的完整文档。
+/// Reads legacy arrays; the first mutation writes the complete document with sections and projects.
 pub(super) struct ProjectStore {
     path: PathBuf,
 }
@@ -28,7 +28,7 @@ impl ProjectStore {
     fn read(&self) -> Result<LibraryData, String> {
         let bytes = match fs::read(&self.path) {
             Ok(bytes) => bytes,
-            // 首次启动没有项目是正常状态，读取不能顺手创建示例或空文件。
+            // An empty library is valid on first launch; reads must not create fixtures or empty files.
             Err(error) if error.kind() == ErrorKind::NotFound => return Ok(LibraryData::default()),
             Err(_) => {
                 return Err(
@@ -74,7 +74,7 @@ impl ProjectStore {
     }
 
     pub(super) fn update(&self, change: LibraryChange) -> Result<LibrarySnapshot, String> {
-        // 整个读取—修改—写入串行执行，避免并行命令丢失彼此的变更。
+        // Serialize the entire read-modify-write operation to prevent concurrent commands from losing updates.
         let _guard = LIBRARY_WRITE
             .lock()
             .map_err(|_| "Could not lock the library.")?;
@@ -169,7 +169,7 @@ impl ProjectStore {
             std::process::id(),
             NEXT_WRITE.fetch_add(1, Ordering::Relaxed)
         ));
-        // 同目录临时文件写完并刷盘后原子替换；失败不覆盖原有文件。
+        // Flush a temporary file in the same directory before atomic replacement; failures preserve the original.
         let result = (|| -> std::io::Result<()> {
             let mut file = fs::OpenOptions::new()
                 .write(true)
@@ -211,7 +211,7 @@ fn validate(projects: &[ProjectDetail]) -> Result<(), String> {
             return Err(invalid_library());
         }
 
-        // children 已经表达树；只校验跨分支 ID 唯一，不引入图或父子双份关系。
+        // Children already define the tree; validate unique IDs across branches without duplicating graph relationships.
         let mut node_ids = HashSet::new();
         validate_nodes(&detail.plan.nodes, &mut node_ids)?;
 
