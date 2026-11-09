@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, MessageSquare, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, MessageSquare, X } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -171,9 +171,8 @@ export function ReadingDocument({
         onKeyUp={selectText}
       >
         <header className="document-heading">
-          <h1 className="text-[27px] leading-snug font-semibold tracking-tight">
-            {section.title}
-          </h1>
+          <p className="document-chapter">{chapter.title}</p>
+          <h1>{section.title}</h1>
         </header>
         <div className="document-prose">
           {section.paragraphs.map((paragraph, pIndex) => {
@@ -261,7 +260,7 @@ export function ReadingDocument({
             >
               <ArrowLeft className="text-muted-foreground" />
               <span className="min-w-0">
-                <span className="block text-[11px] font-normal text-muted-foreground">
+                <span className="block text-micro font-normal text-muted-foreground">
                   Previous
                 </span>
                 <span className="mt-1 block truncate text-xs font-normal">
@@ -284,7 +283,7 @@ export function ReadingDocument({
               }
             >
               <span className="min-w-0">
-                <span className="block text-[11px] font-normal text-muted-foreground">
+                <span className="block text-micro font-normal text-muted-foreground">
                   Next
                 </span>
                 <span className="mt-1 block truncate text-xs font-normal">

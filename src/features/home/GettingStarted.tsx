@@ -4,7 +4,7 @@ import {
   ChevronDown,
   Circle,
   MoreHorizontal,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
@@ -179,7 +179,11 @@ export function GettingStarted({
       onOpenChange={(open) => updatePreferences({ ...preferences, open })}
       asChild
     >
-      <Card size="sm" aria-label="Getting started" className="gap-1">
+      <Card
+        size="sm"
+        aria-label="Getting started"
+        className="onboarding-checklist"
+      >
         <CardHeader>
           <CardTitle className="min-w-0">
             <CollapsibleTrigger asChild>
@@ -188,10 +192,10 @@ export function GettingStarted({
                 size="sm"
                 className="h-auto min-h-7 w-full min-w-0 justify-start gap-2 px-1 text-left"
               >
-                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 text-left">
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left">
                   <span>Getting started</span>
                   <span className="text-xs font-normal text-muted-foreground">
-                    {completed} of {steps.length}
+                    {completed}/{steps.length}
                   </span>
                 </span>
                 <ChevronDown

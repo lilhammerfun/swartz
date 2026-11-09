@@ -15,7 +15,7 @@ export function PassageQuote({
       className="annotation-quote space-y-1"
       style={annotationId ? annotationColorStyle(annotationId) : undefined}
     >
-      <p className="text-[10px] font-medium text-muted-foreground">
+      <p className="text-micro font-medium text-muted-foreground">
         Quoted passage
       </p>
       {onSelect ? (

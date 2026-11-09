@@ -12,18 +12,16 @@ import type { AppRouteContext } from "./app-route-context";
 import { RouteLoading } from "./RouteFeedback";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
   MessagesSquare,
-  Maximize2,
-  Minus,
   PanelRight,
-  X,
-} from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from "@/components/ui/icons";
+import { EmptyState, RuntimeErrorNotice } from "@/components/ui/feedback";
+import { ToastNotice } from "@/components/ui/toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,7 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { IconButton } from "@/components/ui/IconButton";
 import {
@@ -49,16 +47,13 @@ import {
 } from "@/features/projects/project-data";
 import { ReaderSplit } from "@/features/reader/ReaderSplit";
 import { SessionPanel } from "@/features/chat/SessionPanel";
+import { ConversationSidebar } from "@/features/chat/ConversationSidebar";
 import { useSessionPanel } from "@/features/chat/useSessionPanel";
 import { sessionPassages } from "@/features/chat/session-passages";
 import type { ChatSession } from "@/features/chat/chat-store";
 import { useChat } from "@/features/chat/useChat";
 import { useBookIntegrations } from "@/features/chat/useBookIntegrations";
-import { UndoToasts, type UndoNotice } from "@/components/ui/undo-toast";
-import {
-  sessionIsSynthesized,
-  visibleMessages,
-} from "@/features/chat/book-integration";
+import { projectConversation } from "@/features/chat/project-conversation";
 import {
   loadRecentLearning,
   recordRecentLearning,
@@ -66,6 +61,7 @@ import {
   RECENT_LEARNING_STORAGE_KEY,
   type RecentLearningEntry,
 } from "@/features/home/recent-learning";
+import { PrimaryRail } from "./PrimaryRail";
 import { SidebarReopenButton } from "./SidebarReopenButton";
 import type { AnnotationSelection } from "@/features/annotations/annotation-selection";
 import {
@@ -108,6 +104,7 @@ function loadRecent() {
 }
 
 export default function App() {
+  const nativeMac = isTauri() && /Mac/.test(navigator.platform);
   const [sectionAction, setSectionAction] = useState<SectionAction | null>(
     null,
   );
@@ -119,19 +116,21 @@ export default function App() {
   const navigation = useNavigation();
   const navigationType = useNavigationType();
   const matches = useMatches();
-  // Derive the active page from the router's actual matches.
-  const location = useMemo<ReaderLocation>(() => {
-    const match = [...matches]
-      .reverse()
-      .find(
-        (match) =>
-          (match.handle as ReaderRouteHandle | undefined)?.readerLocation,
-      );
-    return match
-      ? (match.handle as ReaderRouteHandle).readerLocation(match.params)
-      : { scale: "home" };
-    // Revalidation keeps the current location, so preserve its identity for detecting navigation during async work.
-  }, [routerLocation.pathname]);
+  const activeMatch = [...matches]
+    .reverse()
+    .find(
+      (match) =>
+        (match.handle as ReaderRouteHandle | undefined)?.readerLocation,
+    );
+  const matchedLocation: ReaderLocation = activeMatch
+    ? (activeMatch.handle as ReaderRouteHandle).readerLocation(
+        activeMatch.params,
+      )
+    : { scale: "home" };
+  // A lazy route can register its handle after the pathname changes. Track the
+  // resolved destination while keeping its identity stable during revalidation.
+  const locationKey = JSON.stringify(matchedLocation);
+  const location = useMemo(() => matchedLocation, [locationKey]);
   const routeBook = matches
     .map(
       (match) =>
@@ -160,8 +159,16 @@ export default function App() {
   const projects = useProjects();
   const integrations = useBookIntegrations();
   // The reader projects textbooks from the project catalog; it owns no separate book catalog.
+  const routeProject = matches
+    .map((match) => match.loaderData as ProjectDetail | undefined)
+    .find((detail) => detail?.project && detail?.goal && detail?.plan);
   const projectBooks = projects.projects.map((project) =>
-    projectBook(project, projects.details[project.id]),
+    projectBook(
+      project,
+      routeProject?.project.id === project.id
+        ? routeProject
+        : projects.details[project.id],
+    ),
   );
   const library = {
     books: projectBooks
@@ -174,21 +181,8 @@ export default function App() {
         integrations.project(routeBook?.id === item.id ? routeBook : item),
       ),
   };
-  const storedChat = useChat();
-  const chat = {
-    ...storedChat,
-    sessions: storedChat.sessions.filter(
-      (session) => !sessionIsSynthesized(session, integrations.entries),
-    ),
-    getSession: (id: string) => {
-      const session = storedChat.getSession(id);
-      return session && !sessionIsSynthesized(session, integrations.entries)
-        ? session
-        : undefined;
-    },
-  };
+  const chat = useChat();
   const [recent, setRecent] = useState(loadRecent);
-  const [undoNotices, setUndoNotices] = useState<UndoNotice[]>([]);
   const [sessionPanelWidth, setSessionPanelWidth] = useState<number>();
   const [sessionToolbar, setSessionToolbar] = useState<HTMLDivElement | null>(
     null,
@@ -243,9 +237,19 @@ export default function App() {
   const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
   const [annotationFocusRequest, setAnnotationFocusRequest] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
+  const searchReturnFocus = useRef<HTMLElement | null>(null);
+  const openSearch = () => {
+    searchReturnFocus.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setSearchOpen(true);
+  };
   const [search, setSearch] = useState("");
-  const [notice, setNotice] = useState("");
-  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [notice, setNotice] = useState<{ id: number; text: string } | null>(
+    null,
+  );
+  const noticeSequence = useRef(0);
   const currentBookLocation =
     location.scale === "section" || location.scale === "book"
       ? location
@@ -259,9 +263,11 @@ export default function App() {
       item.id ===
       (location.scale === "chat"
         ? routeChatSession?.bookId
-        : "bookId" in currentBookLocation
-          ? currentBookLocation.bookId
-          : undefined),
+        : location.scale === "project"
+          ? location.projectId
+          : "bookId" in currentBookLocation
+            ? currentBookLocation.bookId
+            : undefined),
   );
   const chapter =
     book?.chapters.find(
@@ -273,19 +279,21 @@ export default function App() {
     ) ?? chapter?.sections[0];
   const inBook = location.scale === "section" || location.scale === "book";
   const panel = useSessionPanel(book?.id);
-  const panelVisible = inBook && !!book && panel.open;
+  const inProject = location.scale === "project";
+  const panelVisible = (inBook || inProject) && !!book && panel.open;
+  const projectChat = book
+    ? projectConversation(chat.sessions, book.id, panel.active)
+    : undefined;
   const chatSession =
     location.scale === "chat"
       ? routeChatSession
-      : inBook
-        ? chat.getSession(panel.active)
+      : inBook || inProject
+        ? projectChat?.current
         : undefined;
-  const notes = sessionPassages(
-    chat.sessions.map((session) => ({
-      ...session,
-      messages: visibleMessages(session, integrations.entries),
-    })),
-  );
+  const inConversations =
+    location.scale === "home" ||
+    (location.scale === "chat" && !chatSession?.bookId);
+  const notes = sessionPassages(chat.sessions);
   const [messageFocus, setMessageFocus] = useState<{
     id: string;
     request: number;
@@ -342,26 +350,23 @@ export default function App() {
     return () => window.removeEventListener("storage", sync);
   }, []);
   const showNotice = (text: string) => {
-    setNotice(text);
-    if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    noticeTimer.current = setTimeout(() => setNotice(""), 4200);
+    setNotice({ id: ++noticeSequence.current, text });
   };
-  useEffect(
-    () => () => {
-      if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    },
-    [],
-  );
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        if (!searchOpen)
+          searchReturnFocus.current =
+            document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : null;
         setSearchOpen((value) => !value);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, []);
+  }, [searchOpen]);
   const navigate = (next: ReaderLocation) => {
     void routerNavigate(locationPath(next));
     setActiveAnnotation(null);
@@ -414,24 +419,34 @@ export default function App() {
         showNotice("Could not open this project. Please try again."),
       );
   };
+  const ensureProjectChat = (target: LearningBook) =>
+    projectConversation(chat.sessions, target.id, panel.active).current?.id ??
+    chat.startSession(target);
   const startProject = (detail: ProjectDetail) => {
     const target = integrations.project(projectBook(detail.project, detail));
-    const sessionId = chat.startSession(target);
+    const sessionId = ensureProjectChat(target);
     if (!sessionId)
       throw new Error(
-        "Could not open the learning session. Check local storage and try again.",
+        "Could not open this conversation. Check local storage and try again.",
       );
     navigateToBook(target);
     panel.openSession(sessionId, target.id);
+    const current = chat.getSession(sessionId);
+    if (configured && !current?.request) void chat.startLearning(sessionId, {});
   };
-  const openSavedConversation = (id: string) => {
+  const openSavedConversation = (id: string, messageId?: string) => {
     const session = chat.getSession(id);
     if (!session) return;
     const target = library.books.find((item) => item.id === session.bookId);
     if (target) {
       openBook(target);
-      panel.openSession(id, target.id);
+      panel.openSession(ensureProjectChat(target) ?? id, target.id);
     } else navigate({ scale: "chat", conversationId: id });
+    if (messageId)
+      setMessageFocus((current) => ({
+        id: messageId,
+        request: (current?.request ?? 0) + 1,
+      }));
   };
   const sendOrdinaryQuestion = async (
     submission: PromptSubmission,
@@ -441,6 +456,7 @@ export default function App() {
       return false;
     }
     const origin = location;
+    setMessageFocus(undefined);
     const id = await chat.send({
       sessionId: chatSession?.id,
       book: chatSession?.bookId ? book : undefined,
@@ -478,30 +494,15 @@ export default function App() {
   const openPanelSession = (id: string) => {
     setActiveAnnotation(null);
     setMessageFocus(undefined);
-    if (panel.pendingPassage && attachPassage(id, panel.pendingPassage))
-      panel.setPendingPassage(undefined);
-    panel.openSession(id);
-  };
-  const newPanelSession = () => {
-    if (!book) return;
-    const id = chat.startSession(book, true);
-    if (!id) return;
-    setActiveAnnotation(null);
-    setMessageFocus(undefined);
-    if (panel.pendingPassage) {
-      chat.setDraftPassage(id, panel.pendingPassage);
-      panel.setPendingPassage(undefined);
-    }
     panel.openSession(id);
   };
   const compose = (anchor: AnnotationAnchor) => {
-    panel.setOpen(true);
-    const current = chat.getSession(panel.active);
-    if (book && current && current.bookId === book.id)
-      attachPassage(current.id, anchor);
-    else {
-      panel.setPendingPassage(anchor);
-      panel.showList();
+    if (!book) return;
+    const id = ensureProjectChat(book);
+    if (!id) return;
+    if (attachPassage(id, anchor)) {
+      panel.openSession(id);
+      setMessageFocus(undefined);
     }
   };
   const selectAnnotation = (annotation: Annotation) => {
@@ -509,7 +510,7 @@ export default function App() {
       session.messages.some((message) => message.id === annotation.id),
     );
     if (!session) return;
-    panel.openSession(session.id);
+    panel.openSession(projectChat?.current?.id ?? session.id);
     setActiveAnnotation(annotation.id);
     setMessageFocus((current) => ({
       id: annotation.id,
@@ -517,8 +518,8 @@ export default function App() {
     }));
   };
   const selectAnnotations = (selection: AnnotationSelection) => {
-    panel.showList(selection.ids);
-    setActiveAnnotation(null);
+    const annotation = notes.find((item) => selection.ids.includes(item.id));
+    if (annotation) selectAnnotation(annotation);
   };
   const query = search.trim().toLowerCase();
   const bookSearchResults = library.books.filter((item) =>
@@ -537,75 +538,22 @@ export default function App() {
             .includes(query),
         )
     : [];
-  const conversationSearchResults = chat.sessions.filter(
-    (session) =>
-      session.messages.length > 0 &&
-      (!query ||
-        `${session.title} ${session.messages.map((message) => message.text).join(" ")}`
-          .toLowerCase()
-          .includes(query)),
+  const conversationSearchResults = chat.sessions.flatMap((session) =>
+    session.messages
+      .filter((message) => query && message.text.toLowerCase().includes(query))
+      .map((message) => ({ session, message })),
   );
-  const native = async (action: "minimize" | "toggleMaximize" | "close") => {
-    try {
-      await getCurrentWindow()[action]();
-    } catch {
-      showNotice("The window action could not be completed. Please try again.");
-    }
-  };
   const renderConversation = (session: ChatSession) => (
-    <Suspense fallback={<RouteLoading />}>
+    <Suspense fallback={<RouteLoading conversation />}>
       <ChatPage
-        key={session.id}
-        compact={inBook}
-        messages={visibleMessages(session, integrations.entries)}
-        integrationError={integrations.error}
-        targetBooks={
+        key={session.bookId ?? session.id}
+        compact={panelVisible}
+        messages={
           session.bookId
-            ? library.books.filter((target) => target.id === session.bookId)
-            : library.books
+            ? projectConversation(chat.sessions, session.bookId).messages
+            : session.messages
         }
-        needsBookChoice={!session.bookId}
-        onOrganize={(bookId) => {
-          const target = library.books.find((item) => item.id === bookId);
-          const current = chat.getSession(session.id);
-          if (!target || !current)
-            throw new Error(
-              "This conversation or book is no longer available.",
-            );
-          const origin = location;
-          const entry = integrations.integrate(current, target);
-          panel.closeSession(session.id);
-          setActiveAnnotation(null);
-          setMessageFocus(undefined);
-          if (origin.scale === "chat") navigate({ scale: "home" });
-          const restore = () => {
-            try {
-              integrations.undo(entry.id);
-              if (session.bookId) panel.openSession(session.id, session.bookId);
-              navigate(origin);
-              return true;
-            } catch {
-              showNotice(
-                "Could not undo. Your conversation is still saved. Try Undo again.",
-              );
-              return false;
-            }
-          };
-          setUndoNotices((current) => [
-            ...current,
-            {
-              id: entry.id,
-              title: "Conversation synthesized",
-              onUndo: restore,
-            },
-          ]);
-          requestAnimationFrame(() =>
-            document
-              .querySelector<HTMLElement>('[aria-label="Session list"]')
-              ?.focus({ preventScroll: true }),
-          );
-        }}
-        sessionId={session.id}
+        sessionId={session.bookId ?? session.id}
         scrollPositions={panel.scrollPositions}
         draftPassage={session.draftPassage}
         onRemovePassage={() => chat.setDraftPassage(session.id)}
@@ -643,6 +591,17 @@ export default function App() {
         onSettings={() => navigate({ scale: "settings" })}
         onConfigure={() => navigate({ scale: "settings" })}
         onSend={sendOrdinaryQuestion}
+        onStartLearning={
+          session.bookId
+            ? () => {
+                if (!configured) {
+                  navigate({ scale: "settings" });
+                  return;
+                }
+                void chat.startLearning(session.id, {});
+              }
+            : undefined
+        }
         onCancel={() => {
           void chat.cancel();
         }}
@@ -690,11 +649,17 @@ export default function App() {
       selecting: selectingProjects,
       onSelectingChange: setSelectingProjects,
       onSectionAction: setSectionAction,
-      onSearch: () => setSearchOpen(true),
+      onSearch: openSearch,
       onOpen: (project) =>
         navigate({ scale: "project", projectId: project.id }),
     },
-    project: { onStart: startProject },
+    project: {
+      onStart: startProject,
+      onRead: (detail) =>
+        navigateToBook(
+          integrations.project(projectBook(detail.project, detail)),
+        ),
+    },
     settings: {
       settings: modelSettings,
       loadError: modelLoadError,
@@ -737,31 +702,17 @@ export default function App() {
   };
   return (
     <SidebarProvider
-      className="desktop-app"
+      className={`desktop-app${nativeMac ? " desktop-app--macos" : ""}`}
       mobileBreakpoint={panelVisible ? 1180 : 768}
-      style={{ "--sidebar-width": "256px" } as React.CSSProperties}
+      style={
+        {
+          "--sidebar-width": "240px",
+          "--session-panel-width": sessionPanelWidth
+            ? `${sessionPanelWidth}px`
+            : undefined,
+        } as React.CSSProperties
+      }
     >
-      <LibrarySidebar
-        onGettingStarted={() => setRevealGettingStarted(true)}
-        gettingStarted={
-          <GettingStarted
-            configured={configured}
-            projects={projects.projects}
-            details={projects.details}
-            loading={projects.loading}
-            loadDetail={projects.loadDetail}
-            onNavigate={navigate}
-            reveal={revealGettingStarted}
-            onRevealHandled={() => setRevealGettingStarted(false)}
-          />
-        }
-        book={book}
-        location={location}
-        onNavigate={navigate}
-        showContents={
-          inBook || (location.scale === "chat" && !!chatSession?.bookId)
-        }
-      />
       {sectionAction && (
         <LibrarySectionDialog
           key={
@@ -777,54 +728,45 @@ export default function App() {
           }}
         />
       )}
-      <SidebarInset
-        className="reader-workspace"
-        style={
-          {
-            "--session-panel-width": sessionPanelWidth
-              ? `${sessionPanelWidth}px`
-              : undefined,
-          } as React.CSSProperties
-        }
-      >
-        <header
-          className="app-topbar flex items-center justify-between gap-4"
-          data-tauri-drag-region
-        >
-          <div className="flex min-w-0 flex-1 items-center gap-1">
+      <header className="app-topbar" data-tauri-drag-region>
+        <div className="app-topbar-conversation" data-tauri-drag-region>
+          <div className="app-topbar-leading" data-tauri-drag-region>
+            <div className="app-topbar-history" aria-label="Navigation history">
+              <IconButton
+                label="Go back"
+                disabled={historyIndex === 0}
+                onClick={() => moveHistory("back")}
+              >
+                <ArrowLeft />
+              </IconButton>
+              <IconButton
+                label="Go forward"
+                disabled={historyIndex >= lastHistoryIndex}
+                onClick={() => moveHistory("forward")}
+              >
+                <ArrowRight />
+              </IconButton>
+            </div>
             <SidebarReopenButton />
-            {navigation.state !== "idle" && (
-              <span className="route-navigation-status" role="status">
-                Loading…
-              </span>
-            )}
-            <IconButton
-              label="Go back"
-              disabled={historyIndex === 0}
-              onClick={() => moveHistory("back")}
-            >
-              <ArrowLeft />
-            </IconButton>
-            <IconButton
-              label="Go forward"
-              disabled={historyIndex >= lastHistoryIndex}
-              onClick={() => moveHistory("forward")}
-            >
-              <ArrowRight />
-            </IconButton>
-            {(inBook || chatSession || location.scale === "project") && (
-              <div className="app-breadcrumb ml-2 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-                <span className="truncate">
-                  {location.scale === "project"
-                    ? projects.projects.find(
-                        (project) => project.id === location.projectId,
-                      )?.title
-                    : chatSession
-                      ? chatSession.bookId
-                        ? book?.title
-                        : chatSession.title
-                      : book?.title}
-                </span>
+          </div>
+          <div className="app-breadcrumb" data-tauri-drag-region>
+            {(((inBook || inProject) && book) || chatSession) && (
+              <div className="flex min-w-0 items-center gap-2">
+                <Button
+                  variant="ghost"
+                  shape="default"
+                  className="breadcrumb-project"
+                  onClick={() => {
+                    if (book)
+                      navigate({ scale: "project", projectId: book.id });
+                  }}
+                >
+                  {book
+                    ? (projects.projects.find(
+                        (project) => project.id === book.id,
+                      )?.title ?? book.title)
+                    : chatSession?.title}
+                </Button>
                 {location.scale === "section" && chapter && (
                   <>
                     <span className="text-muted-foreground/50">/</span>
@@ -833,206 +775,241 @@ export default function App() {
                 )}
               </div>
             )}
-          </div>
-          <div
-            className={`flex min-w-8 items-center justify-end gap-1 ${panelVisible ? "session-toolbar" : ""}`}
-            data-tauri-drag-region
-          >
-            {panelVisible && (
-              <div
-                ref={setSessionToolbar}
-                className="flex h-full min-w-0 flex-1"
-              />
+            {!(((inBook || inProject) && book) || chatSession) && (
+              <span className="truncate">
+                {location.scale === "settings"
+                  ? "Settings"
+                  : location.scale === "library"
+                    ? "Library"
+                    : "New conversation"}
+              </span>
             )}
-            {location.scale === "chat" && chatSession?.bookId && book && (
-              <IconButton label="Read book" onClick={() => openBook(book)}>
-                <BookOpen />
-              </IconButton>
-            )}
-            {inBook && (
-              <IconButton
-                label={
-                  panelVisible
-                    ? "Collapse session panel"
-                    : "Expand session panel"
-                }
-                aria-pressed={panelVisible}
-                aria-controls="session-panel"
-                variant={panelVisible ? "secondary" : "ghost"}
-                onClick={() => {
-                  panel.setOpen(!panel.open);
-                  if (panel.open) setActiveAnnotation(null);
-                }}
-              >
-                <PanelRight />
-              </IconButton>
-            )}
-            {isTauri() && (
-              <>
-                <IconButton
-                  label="Minimize"
-                  onClick={() => void native("minimize")}
-                >
-                  <Minus />
-                </IconButton>
-                <IconButton
-                  label="Maximize window"
-                  onClick={() => void native("toggleMaximize")}
-                >
-                  <Maximize2 />
-                </IconButton>
-                <IconButton
-                  label="Close window"
-                  className="hover:bg-red-50 hover:text-red-600"
-                  onClick={() => void native("close")}
-                >
-                  <X />
-                </IconButton>
-              </>
+            {navigation.state !== "idle" && (
+              <span className="route-navigation-status" role="status">
+                Loading…
+              </span>
             )}
           </div>
-        </header>
-        {projects.error && (
-          <Alert
-            variant="destructive"
-            className="rounded-none border-x-0 border-t-0"
-          >
-            <AlertDescription className="flex items-center justify-between gap-3">
-              {projects.error}
-              <Button variant="outline" size="sm" onClick={projects.retry}>
-                Retry loading
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-        <ReaderSplit
-          onPanelWidthChange={setSessionPanelWidth}
-          panel={
-            panelVisible ? (
-              <SessionPanel
-                toolbar={sessionToolbar}
-                state={panel}
-                sessions={chat.sessions
-                  .filter((session) => session.bookId === book?.id)
-                  .map((session) => ({
-                    ...session,
-                    messages: visibleMessages(session, integrations.entries),
-                  }))
-                  .sort(
-                    (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
-                  )}
-                renderSession={renderConversation}
-                error={chat.error || undefined}
-                onSelect={openPanelSession}
-                onList={() => {
-                  panel.showList();
+        </div>
+        <div
+          className={`app-topbar-actions ${panelVisible ? "session-toolbar" : ""}`}
+          data-tauri-drag-region
+        >
+          {panelVisible && (
+            <div
+              ref={setSessionToolbar}
+              className="flex h-full min-w-0 flex-1"
+            />
+          )}
+          {location.scale === "chat" && chatSession?.bookId && book && (
+            <IconButton label="Read textbook" onClick={() => openBook(book)}>
+              <BookOpen />
+            </IconButton>
+          )}
+          {(inBook || inProject) && book && (
+            <IconButton
+              label={panelVisible ? "Close conversation" : "Open conversation"}
+              aria-pressed={panelVisible}
+              aria-controls="session-panel"
+              variant={panelVisible ? "secondary" : "ghost"}
+              onClick={() => {
+                if (panel.open) {
+                  panel.setOpen(false);
                   setActiveAnnotation(null);
-                  setMessageFocus(undefined);
-                }}
-                onCloseTab={panel.closeSession}
-                onNew={newPanelSession}
-                onClearPassage={() => panel.setPendingPassage(undefined)}
+                } else if (book) {
+                  const id = ensureProjectChat(book);
+                  if (id) panel.openSession(id);
+                }
+              }}
+            >
+              <PanelRight />
+            </IconButton>
+          )}
+        </div>
+      </header>
+      <PrimaryRail
+        location={location}
+        onNavigate={navigate}
+        onSearch={openSearch}
+        onGettingStarted={() => {
+          setRevealGettingStarted(true);
+          if (inConversations) navigate({ scale: "library" });
+        }}
+      />
+      <div className="workspace-island">
+        {inConversations ? (
+          <ConversationSidebar
+            sessions={chat.sessions}
+            location={location}
+            pendingSessionId={chat.pendingSessionId}
+            onNavigate={navigate}
+          />
+        ) : (
+          <LibrarySidebar
+            projects={projects.projects}
+            gettingStarted={
+              <GettingStarted
+                configured={configured}
+                projects={projects.projects}
+                details={projects.details}
+                loading={projects.loading}
+                loadDetail={projects.loadDetail}
+                onNavigate={navigate}
+                reveal={revealGettingStarted}
+                onRevealHandled={() => setRevealGettingStarted(false)}
               />
-            ) : null
+            }
+            book={book}
+            location={location}
+            onNavigate={navigate}
+            showContents={
+              inBook ||
+              inProject ||
+              (location.scale === "chat" && !!chatSession?.bookId)
+            }
+          />
+        )}
+        <SidebarInset
+          className="reader-workspace"
+          style={
+            {
+              "--session-panel-width": sessionPanelWidth
+                ? `${sessionPanelWidth}px`
+                : undefined,
+            } as React.CSSProperties
           }
         >
-          <Outlet context={routeContext} />
-        </ReaderSplit>
-      </SidebarInset>
-      <UndoToasts
-        notices={undoNotices}
-        onDismiss={(id) =>
-          setUndoNotices((current) =>
-            current.filter((notice) => notice.id !== id),
-          )
-        }
-      />
+          {projects.error && (
+            <RuntimeErrorNotice
+              title="Could not load projects"
+              className="workspace-error"
+              action={
+                <Button variant="outline" size="sm" onClick={projects.retry}>
+                  Retry loading
+                </Button>
+              }
+            >
+              {projects.error}
+            </RuntimeErrorNotice>
+          )}
+          <ReaderSplit
+            onPanelWidthChange={setSessionPanelWidth}
+            panel={
+              panelVisible ? (
+                <SessionPanel
+                  toolbar={sessionToolbar}
+                  session={projectChat?.current}
+                  drafts={projectChat?.drafts ?? []}
+                  unanswered={projectChat?.unanswered ?? []}
+                  renderSession={renderConversation}
+                  onSelect={openPanelSession}
+                />
+              ) : null
+            }
+          >
+            <Outlet context={routeContext} />
+          </ReaderSplit>
+        </SidebarInset>
+      </div>
+
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="gap-4 sm:max-w-xl">
+        <DialogContent
+          className="gap-4 sm:max-w-xl"
+          onCloseAutoFocus={(event) => {
+            if (searchReturnFocus.current?.isConnected) {
+              event.preventDefault();
+              searchReturnFocus.current.focus();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Search</DialogTitle>
             <DialogDescription className="sr-only">
-              Search books, chapter titles and conversations.
+              Search projects, textbook passages and conversations.
             </DialogDescription>
           </DialogHeader>
-          <Input
-            aria-label="Search books, chapters and conversations"
-            placeholder="Search books, chapters, or conversations…"
+          <SearchInput
+            onClear={() => setSearch("")}
+            aria-label="Search projects, passages and conversations"
+            placeholder="Search projects, passages, or conversations…"
             value={search}
             onChange={(event) => setSearch(event.currentTarget.value)}
           />
-          <div className="max-h-96 space-y-1 overflow-y-auto">
-            {bookSearchResults.map((target) => (
-              <Button
-                key={target.id}
-                variant="ghost"
-                className="h-auto w-full justify-start gap-3 py-3"
-                onClick={() => openBook(target)}
-              >
-                <BookOpen className="text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-left">
-                  {target.title}
-                </span>
-                <ArrowRight className="text-muted-foreground" />
-              </Button>
-            ))}
-            {searchResults.map(({ book: target, chapter: c, section: s }) => (
-              <Button
-                key={s.id}
-                variant="ghost"
-                className="h-auto w-full justify-start gap-3 py-3"
-                onClick={() =>
-                  navigate({
-                    scale: "section",
-                    bookId: target.id,
-                    chapterId: c.id,
-                    sectionId: s.id,
-                  })
-                }
-              >
-                <BookOpen className="text-muted-foreground" />
-                <span className="flex-1 text-left">
-                  <span className="block text-sm">{s.title}</span>
-                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                    {target.title} / {c.title}
+          <ScrollArea className="search-results">
+            <div className="space-y-1">
+              {bookSearchResults.map((target) => (
+                <Button
+                  key={target.id}
+                  variant="ghost"
+                  className="h-auto w-full justify-start gap-3 py-3"
+                  onClick={() => openBook(target)}
+                >
+                  <BookOpen className="text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {target.title}
                   </span>
-                </span>
-                <ArrowRight className="text-muted-foreground" />
-              </Button>
-            ))}
-            {conversationSearchResults.map((session) => (
-              <Button
-                key={session.id}
-                variant="ghost"
-                className="h-auto w-full justify-start gap-3 py-3"
-                onClick={() => openSavedConversation(session.id)}
-              >
-                <MessagesSquare className="text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-left">
-                  {session.title}
-                </span>
-                <ArrowRight className="text-muted-foreground" />
-              </Button>
-            ))}
-            {!searchResults.length &&
-              !bookSearchResults.length &&
-              !conversationSearchResults.length && (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No results.
-                </p>
-              )}
-          </div>
+                  <ArrowRight className="text-muted-foreground" />
+                </Button>
+              ))}
+              {searchResults.map(({ book: target, chapter: c, section: s }) => (
+                <Button
+                  key={s.id}
+                  variant="ghost"
+                  className="h-auto w-full justify-start gap-3 py-3"
+                  onClick={() =>
+                    navigate({
+                      scale: "section",
+                      bookId: target.id,
+                      chapterId: c.id,
+                      sectionId: s.id,
+                    })
+                  }
+                >
+                  <BookOpen className="text-muted-foreground" />
+                  <span className="flex-1 text-left">
+                    <span className="block text-sm">{s.title}</span>
+                    <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                      {target.title} / {c.title}
+                    </span>
+                  </span>
+                  <ArrowRight className="text-muted-foreground" />
+                </Button>
+              ))}
+              {conversationSearchResults.map(({ session, message }) => (
+                <Button
+                  key={`${session.id}:${message.id}`}
+                  variant="ghost"
+                  className="h-auto w-full justify-start gap-3 py-3"
+                  onClick={() => openSavedConversation(session.id, message.id)}
+                >
+                  <MessagesSquare className="text-muted-foreground" />
+                  <span className="min-w-0 flex-1 text-left">
+                    <span className="line-clamp-2 whitespace-normal text-foreground">
+                      {message.text}
+                    </span>
+                    <span className="mt-1 block truncate text-xs text-muted-foreground">
+                      {projects.projects.find(
+                        (project) => project.id === session.bookId,
+                      )?.title ?? session.title}{" "}
+                      · {message.role === "user" ? "Question" : "Answer"}
+                    </span>
+                  </span>
+                  <ArrowRight className="text-muted-foreground" />
+                </Button>
+              ))}
+              {!searchResults.length &&
+                !bookSearchResults.length &&
+                !conversationSearchResults.length && (
+                  <EmptyState>No results.</EmptyState>
+                )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
       {notice && (
-        <Alert className="notice-toast shadow-lg" role="status">
-          <AlertDescription className="flex items-start justify-between gap-3">
-            {notice}
-            <IconButton label="Dismiss" onClick={() => setNotice("")}>
-              <X />
-            </IconButton>
-          </AlertDescription>
-        </Alert>
+        <ToastNotice key={notice.id} onClose={() => setNotice(null)}>
+          {notice.text}
+        </ToastNotice>
       )}
     </SidebarProvider>
   );

@@ -1,7 +1,23 @@
-import { useEffect, useRef, useState } from "react";
-import { Fullscreen, Info, Maximize, Minus, Plus } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import {
+  createIconElement,
+  Fullscreen,
+  Info,
+  Maximize,
+  Minimize,
+  Minus,
+  Plus,
+} from "@/components/ui/icons";
 import type { MindElixirInstance, NodeObj, Topic } from "mind-elixir";
+import { RuntimeErrorNotice } from "@/components/ui/feedback";
 import { IconButton } from "@/components/ui/IconButton";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -19,55 +35,63 @@ import "./plan-mindmap.css";
 
 const labels = {
   pending: "Not started",
-  in_progress: "In progress",
-  completed: "Completed",
+  in_progress: "Exploring",
+  completed: "Explored",
 };
-// Use the app's Lucide Check, Circle, and CircleDot paths; titles always render through textContent.
 function statusIcon(status: NonNullable<PlanMapMetadata["status"]>) {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  for (const [key, value] of Object.entries({
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    "stroke-width": "2",
-    "stroke-linecap": "round",
-    "stroke-linejoin": "round",
-    "aria-hidden": "true",
-  }))
-    svg.setAttribute(key, value);
-  const shape = document.createElementNS(
-    svg.namespaceURI,
-    status === "completed" ? "path" : "circle",
+  return createIconElement(
+    status === "completed"
+      ? "check"
+      : status === "in_progress"
+        ? "circle-dot"
+        : "circle",
   );
-  if (status === "completed") shape.setAttribute("d", "m20 6-11 11-5-5");
-  else {
-    shape.setAttribute("cx", "12");
-    shape.setAttribute("cy", "12");
-    shape.setAttribute("r", "10");
-  }
-  svg.append(shape);
-  if (status === "in_progress") {
-    const dot = document.createElementNS(svg.namespaceURI, "circle");
-    dot.setAttribute("cx", "12");
-    dot.setAttribute("cy", "12");
-    dot.setAttribute("r", "1");
-    svg.append(dot);
-  }
-  return svg;
 }
 
 /** Read-only Plan view using Mind Elixir's two-sided layout, folding, and canvas controls without writeback. */
-export function PlanMindmap({
-  projectId,
-  title,
-  nodes,
-  overview,
-}: {
+interface PlanMindmapProps {
   projectId: string;
   title: string;
   nodes: PlanNode[];
   overview: string;
-}) {
+}
+
+export function PlanMindmap(props: PlanMindmapProps) {
+  const [expanded, setExpanded] = useState(false);
+  const dialog = useRef<HTMLDivElement>(null);
+  return (
+    <Dialog open={expanded} onOpenChange={setExpanded}>
+      <div hidden={expanded}>
+        <PlanMindmapView {...props} expanded={false} />
+      </div>
+      <DialogContent
+        ref={dialog}
+        className="plan-map-dialog"
+        showCloseButton={false}
+        aria-describedby={undefined}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          dialog.current?.focus();
+        }}
+      >
+        <DialogTitle className="sr-only">
+          {props.title} — Learning plan
+        </DialogTitle>
+        <PlanMindmapView {...props} expanded />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PlanMindmapView({
+  projectId,
+  title,
+  nodes,
+  overview,
+  expanded,
+}: PlanMindmapProps & { expanded: boolean }) {
+  const mapId = `plan-map-${encodeURIComponent(projectId)}-${useId()}`;
+  const ExpandControl = expanded ? DialogClose : DialogTrigger;
   const [popoverContainer, setPopoverContainer] =
     useState<HTMLDivElement | null>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -158,8 +182,7 @@ export function PlanMindmap({
         engine.current = mind;
         fit.current = () => {
           if (!mind || disposed) return;
-          const fullscreen =
-            document.fullscreenElement === element.closest(".plan-mindmap");
+          const fullscreen = expanded;
           const bounds = planMapFit(
             mind.nodes.offsetWidth,
             mind.nodes.offsetHeight,
@@ -298,12 +321,12 @@ export function PlanMindmap({
       fit.current = () => {};
       element.style.removeProperty("height");
     };
-  }, [projectId, title, nodes]);
+  }, [projectId, title, nodes, expanded]);
   return (
     <div className="plan-mindmap" ref={setPopoverContainer}>
       <div className="plan-mindmap-toolbar">
         <div className="plan-mindmap-heading">
-          <h2>Learning plan</h2>
+          <span className="section-meta">Plan connections</span>
           {overview && (
             <Popover>
               <PopoverTrigger asChild>
@@ -349,32 +372,26 @@ export function PlanMindmap({
           <IconButton label="Fit map" onClick={() => fit.current()}>
             <Maximize />
           </IconButton>
-          <IconButton
-            label="Full screen"
-            onClick={() => {
-              const panel = host.current?.closest<HTMLElement>(".plan-mindmap");
-              if (document.fullscreenElement === panel)
-                void document.exitFullscreen();
-              else void panel?.requestFullscreen();
-            }}
-          >
-            <Fullscreen />
-          </IconButton>
+          <ExpandControl asChild>
+            <IconButton label={expanded ? "Exit full screen" : "Full screen"}>
+              {expanded ? <Minimize /> : <Fullscreen />}
+            </IconButton>
+          </ExpandControl>
         </div>
       </div>
       <div
         className="plan-mindmap-canvas"
-        id={`plan-map-${encodeURIComponent(projectId)}`}
+        id={mapId}
         ref={host}
         aria-label="Plan mind map"
       />
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <RuntimeErrorNotice title="Could not display the plan map">
           {error}
-        </p>
+        </RuntimeErrorNotice>
       )}
       <div
-        id={`plan-map-${encodeURIComponent(projectId)}-description`}
+        id={`${mapId}-description`}
         className="plan-mindmap-description"
         aria-live="polite"
       >

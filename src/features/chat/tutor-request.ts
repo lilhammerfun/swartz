@@ -41,9 +41,11 @@ export function prepareTutorRequest(session: ChatSession): TutorRequest {
   const question = session.messages.at(-1);
   if (
     !request ||
-    !question ||
-    question.role !== "user" ||
-    question.id !== request.userMessageId
+    (request.kind === "start_learning"
+      ? !session.bookId
+      : !question ||
+        question.role !== "user" ||
+        question.id !== request.userMessageId)
   )
     throw new Error("The pending question could not be found.");
 
@@ -53,11 +55,18 @@ export function prepareTutorRequest(session: ChatSession): TutorRequest {
         { kind: "project", projectId: session.bookId }
       : { kind: "unassigned", conversationId: session.id },
     requestId: request.id,
-    input: {
-      kind: "question",
-      message: { ...structuredClone(question), role: "user" },
-    },
-    history: structuredClone(session.messages.slice(0, -1)),
+    input:
+      request.kind === "start_learning"
+        ? { kind: "start_learning" }
+        : {
+            kind: "question",
+            message: { ...structuredClone(question!), role: "user" },
+          },
+    history: structuredClone(
+      request.kind === "start_learning"
+        ? session.messages
+        : session.messages.slice(0, -1),
+    ),
     options: {
       ...(request.options.model === undefined
         ? {}

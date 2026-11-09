@@ -1,13 +1,10 @@
-import { coverStyle } from "@/features/projects/project-data";
+import { FolderOpen } from "@/components/ui/icons";
 
-export function BookCover({ id, title }: { id: string; title: string }) {
+export function BookCover({ title }: { id: string; title: string }) {
   return (
-    <span className={`project-cover project-cover-${coverStyle(id)}`}>
-      <span className="project-cover-imprint" aria-hidden="true">
-        Personal textbook
-      </span>
+    <span className="project-cover">
+      <FolderOpen className="project-cover-icon" aria-hidden="true" />
       <span className="project-cover-title">{title}</span>
-      <span className="project-cover-art" aria-hidden="true" />
     </span>
   );
 }

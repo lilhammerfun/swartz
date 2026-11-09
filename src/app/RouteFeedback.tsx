@@ -3,18 +3,56 @@ import {
   useRevalidator,
   useRouteError,
   Link,
+  useLocation,
 } from "react-router";
+import { RuntimeErrorNotice } from "@/components/ui/feedback";
+import { PageLayout } from "@/components/ui/page-layout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
-export function RouteLoading() {
+export function RouteLoading({
+  conversation = false,
+}: {
+  conversation?: boolean;
+}) {
+  const { pathname } = useLocation();
+  const reader = pathname.startsWith("/workspace/") && !conversation;
+  if (conversation)
+    return (
+      <div className="conversation-content" role="status">
+        <span className="sr-only">Loading conversation…</span>
+        <div aria-hidden="true" className="conversation-loading">
+          <Skeleton className="h-12 w-3/4 self-end" />
+          <Skeleton className="h-28 w-full" />
+        </div>
+      </div>
+    );
   return (
-    <section
-      className="p-6 text-sm text-muted-foreground"
-      role="status"
-      aria-live="polite"
+    <PageLayout
+      label="Loading page"
+      className={reader ? "page-feedback reading-document" : "page-feedback"}
+      rememberScroll={false}
     >
-      Loading…
-    </section>
+      <div role="status" aria-live="polite">
+        <span className="sr-only">Loading…</span>
+        <div aria-hidden="true">
+          <Skeleton className="page-skeleton-heading" />
+          <Skeleton className="page-skeleton-line" />
+          {pathname === "/library" ? (
+            <div className="library-bookshelf mt-10">
+              {Array.from({ length: 5 }, (_, index) => (
+                <Skeleton key={index} className="aspect-4/5" />
+              ))}
+            </div>
+          ) : (
+            <div className="page-skeleton-body">
+              <Skeleton className="page-skeleton-block" />
+              <Skeleton className="page-skeleton-block" />
+            </div>
+          )}
+        </div>
+      </div>
+    </PageLayout>
   );
 }
 
@@ -30,27 +68,34 @@ export function RouteError() {
         ? error.message
         : "This page could not be loaded.";
   return (
-    <section className="space-y-4 p-6" role="alert">
-      <h1 className="text-base font-medium">
-        {missing ? "Page not found" : "Unable to load page"}
-      </h1>
-      <p className="text-sm text-muted-foreground">{message}</p>
-      <div className="flex gap-2">
-        {!missing && (
-          <Button
-            variant="outline"
-            disabled={revalidator.state !== "idle"}
-            onClick={() => {
-              void revalidator.revalidate();
-            }}
-          >
-            Retry
-          </Button>
-        )}
-        <Button variant="ghost" asChild>
-          <Link to="/library">Back to Library</Link>
-        </Button>
-      </div>
-    </section>
+    <PageLayout
+      label={missing ? "Page not found" : "Unable to load page"}
+      className="page-feedback"
+      rememberScroll={false}
+    >
+      <RuntimeErrorNotice
+        title={missing ? "Page not found" : "Unable to load page"}
+        action={
+          <div className="flex gap-2">
+            {!missing && (
+              <Button
+                variant="outline"
+                disabled={revalidator.state !== "idle"}
+                onClick={() => {
+                  void revalidator.revalidate();
+                }}
+              >
+                Retry
+              </Button>
+            )}
+            <Button variant="ghost" asChild>
+              <Link to="/library">Back to Library</Link>
+            </Button>
+          </div>
+        }
+      >
+        {message}
+      </RuntimeErrorNotice>
+    </PageLayout>
   );
 }

@@ -11,6 +11,7 @@ import {
   CHAT_STORAGE_KEY,
   emptyChat,
   queueQuestion,
+  queueStartLearning,
   readChat,
   recoverChat,
   restoreFailedRequests,
@@ -22,6 +23,7 @@ import {
   type ChatSnapshot,
   type FailedChatRequest,
 } from "./chat-store";
+import { projectRunSession } from "./project-conversation";
 
 function errorMessage(cause: unknown) {
   return cause instanceof Error
@@ -108,7 +110,9 @@ export function useChat() {
     setPendingSessionId(session.id);
     setError("");
     try {
-      const execution = runTutor(session);
+      const execution = runTutor(
+        projectRunSession(readChat(localStorage).sessions, session),
+      );
       activeRun.current = execution;
       const result = await execution.result;
       if (activeRequest.current !== request.id) return false;
@@ -290,6 +294,19 @@ export function useChat() {
       }
     },
     send,
+    startLearning: async (sessionId: string, options: ModelRequestOptions) => {
+      if (activeRequest.current) return false;
+      try {
+        const queued = queueStartLearning(localStorage, sessionId, options);
+        acceptSnapshot(queued.snapshot);
+        activeRequest.current = queued.session.request!.id;
+        return await run(queued.session);
+      } catch (cause) {
+        activeRequest.current = undefined;
+        setError(errorMessage(cause));
+        return false;
+      }
+    },
     retry,
     cancel: async () => {
       try {

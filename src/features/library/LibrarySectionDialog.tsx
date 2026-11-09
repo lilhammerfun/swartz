@@ -120,16 +120,15 @@ export function LibrarySectionDialog({
             </Button>
             <Button
               type="submit"
+              loading={saving}
               variant={deleting ? "destructive" : "default"}
               disabled={saving || (!deleting && !name.trim())}
             >
-              {saving
-                ? "Saving…"
-                : deleting
-                  ? "Delete section"
-                  : action.kind === "create"
-                    ? "Create section"
-                    : "Save"}
+              {deleting
+                ? "Delete section"
+                : action.kind === "create"
+                  ? "Create section"
+                  : "Save"}
             </Button>
           </DialogFooter>
         </form>

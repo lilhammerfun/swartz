@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useId, useRef, useState, type Ref } from "react";
 import {
   ArrowUp,
@@ -8,8 +9,9 @@ import {
   Settings2,
   Square,
   X,
-} from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+} from "@/components/ui/icons";
+import { RuntimeErrorNotice } from "@/components/ui/feedback";
+import { FieldError } from "@/components/ui/field";
 import {
   Attachment,
   AttachmentAction,
@@ -160,166 +162,168 @@ export function QuestionInput({
             }
           }}
         />
-        <InputGroup aria-busy={pending} className="rounded-2xl border-border">
-          {files.length > 0 && (
-            <InputGroupAddon align="block-start" className="flex-wrap">
-              {files.map((file) => (
-                <Attachment key={file.id} size="sm" className="min-w-0">
-                  <AttachmentMedia>
-                    <FileText />
-                  </AttachmentMedia>
-                  <AttachmentContent>
-                    <AttachmentTitle title={file.name}>
-                      {file.name}
-                    </AttachmentTitle>
-                  </AttachmentContent>
-                  <AttachmentActions>
-                    <AttachmentAction
-                      type="button"
-                      aria-label={`Remove ${file.name}`}
-                      disabled={busy || reading}
-                      onClick={() =>
-                        setFiles(files.filter((item) => item.id !== file.id))
-                      }
-                    >
-                      <X />
-                    </AttachmentAction>
-                  </AttachmentActions>
-                </Attachment>
-              ))}
-            </InputGroupAddon>
-          )}
-          <InputGroupTextarea
-            aria-label={
-              label ?? (followUp ? "Follow-up question" : "Question for AI")
-            }
-            aria-describedby={availabilityId}
-            ref={inputRef}
-            value={value}
-            onChange={(event) => onChange(event.currentTarget.value)}
-            placeholder={
-              placeholder ??
-              (followUp ? "Ask a follow-up…" : "Ask about this passage…")
-            }
-            className="max-h-40 min-h-16 p-3 text-sm leading-6"
-            disabled={pending}
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                !event.nativeEvent.isComposing &&
-                event.nativeEvent.keyCode !== 229
-              ) {
-                event.preventDefault();
-                form.current?.requestSubmit();
-              }
-            }}
-          />
-          <InputGroupAddon align="block-end" className="gap-1.5">
-            <InputGroupButton
-              size="icon-sm"
-              variant="outline"
-              className="rounded-full border-transparent"
-              aria-label="Attach files"
-              title="Attach text or Markdown files"
-              disabled={busy || reading}
-              onClick={() => fileInput.current?.click()}
-            >
-              {reading ? <LoaderCircle className="animate-spin" /> : <Plus />}
-            </InputGroupButton>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <InputGroupButton
-                  size="sm"
-                  variant="outline"
-                  aria-label={`Model: ${model?.name ?? "Select model"}`}
-                  className="ml-auto min-w-0 max-w-32 flex-1 gap-1 rounded-full border-transparent px-2 text-xs font-normal"
-                  disabled={busy}
-                >
-                  <span className="truncate">
-                    {model?.name ?? "Select model"}
-                  </span>
-                  <ChevronDown className="size-3" />
-                </InputGroupButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" className="w-52">
-                <DropdownMenuLabel>
-                  {choices.models.some((item) => item.id === "deepseek-flash")
-                    ? "DeepSeek"
-                    : "Model"}
-                </DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={model?.id ?? ""}
-                  onValueChange={(id) =>
-                    setSelection({ endpoint: settings.baseUrl, model: id })
-                  }
-                >
-                  {choices.models.map((item) => (
-                    <DropdownMenuRadioItem key={item.id} value={item.id}>
-                      {item.name}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-                {choices.models.length > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuItem onSelect={onSettings}>
-                  <Settings2 />
-                  Model settings
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <InputGroupButton
-                  size="sm"
-                  variant="outline"
-                  aria-label={`Effort: ${currentEffort.name}`}
-                  className="gap-1 rounded-full border-transparent px-2 text-xs font-normal"
-                  disabled={busy}
-                >
-                  <span className="text-muted-foreground">Effort</span>
-                  {currentEffort.name}
-                  <ChevronDown className="size-3" />
-                </InputGroupButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" className="w-36">
-                <DropdownMenuLabel>Effort</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={currentEffort.id}
-                  onValueChange={setEffort}
-                >
-                  {choices.efforts.map((item) => (
-                    <DropdownMenuRadioItem key={item.id} value={item.id}>
-                      {item.name}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <InputGroupButton
-              type={pending && onCancel ? "button" : "submit"}
-              size="icon-sm"
-              variant="outline"
-              className="rounded-full"
+        <div className="composer-frame">
+          <InputGroup aria-busy={pending} className="prompt-composer">
+            {files.length > 0 && (
+              <InputGroupAddon align="block-start" className="flex-wrap">
+                {files.map((file) => (
+                  <Attachment key={file.id} size="sm" className="min-w-0">
+                    <AttachmentMedia>
+                      <FileText />
+                    </AttachmentMedia>
+                    <AttachmentContent>
+                      <AttachmentTitle title={file.name}>
+                        {file.name}
+                      </AttachmentTitle>
+                    </AttachmentContent>
+                    <AttachmentActions>
+                      <AttachmentAction
+                        type="button"
+                        aria-label={`Remove ${file.name}`}
+                        disabled={busy || reading}
+                        onClick={() =>
+                          setFiles(files.filter((item) => item.id !== file.id))
+                        }
+                      >
+                        <X />
+                      </AttachmentAction>
+                    </AttachmentActions>
+                  </Attachment>
+                ))}
+              </InputGroupAddon>
+            )}
+            <InputGroupTextarea
               aria-label={
-                pending && onCancel
-                  ? "Stop response"
-                  : pending
-                    ? "Sending question"
-                    : "Send"
+                label ?? (followUp ? "Follow-up question" : "Question for AI")
               }
-              disabled={pending && onCancel ? false : !canSend}
-              onClick={pending && onCancel ? onCancel : undefined}
-            >
-              {pending && onCancel ? (
-                <Square />
-              ) : pending ? (
-                <LoaderCircle className="animate-spin" />
-              ) : (
-                <ArrowUp />
-              )}
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
+              aria-describedby={availabilityId}
+              ref={inputRef}
+              value={value}
+              onChange={(event) => onChange(event.currentTarget.value)}
+              placeholder={
+                placeholder ??
+                (followUp ? "Ask a follow-up…" : "Ask about this passage…")
+              }
+              className="composer-textarea"
+              disabled={pending}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing &&
+                  event.nativeEvent.keyCode !== 229
+                ) {
+                  event.preventDefault();
+                  form.current?.requestSubmit();
+                }
+              }}
+            />
+            <InputGroupAddon align="block-end" className="chat-input-toolbar">
+              <InputGroupButton
+                size="icon-sm"
+                variant="ghost"
+                className="rounded-full border-transparent"
+                aria-label="Attach files"
+                title="Attach text or Markdown files"
+                disabled={busy || reading}
+                onClick={() => fileInput.current?.click()}
+              >
+                {reading ? <LoaderCircle className="animate-spin" /> : <Plus />}
+              </InputGroupButton>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <InputGroupButton
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Model: ${model?.name ?? "Select model"}`}
+                    className="composer-model ml-auto min-w-0 max-w-36 gap-1 px-2"
+                    disabled={busy}
+                  >
+                    <span className="truncate">
+                      {model?.name ?? "Select model"}
+                    </span>
+                    <ChevronDown className="size-3" />
+                  </InputGroupButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="top" className="w-52">
+                  <DropdownMenuLabel>
+                    {choices.models.some((item) => item.id === "deepseek-flash")
+                      ? "DeepSeek"
+                      : "Model"}
+                  </DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={model?.id ?? ""}
+                    onValueChange={(id) =>
+                      setSelection({ endpoint: settings.baseUrl, model: id })
+                    }
+                  >
+                    {choices.models.map((item) => (
+                      <DropdownMenuRadioItem key={item.id} value={item.id}>
+                        {item.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                  {choices.models.length > 0 && <DropdownMenuSeparator />}
+                  <DropdownMenuItem onSelect={onSettings}>
+                    <Settings2 />
+                    Model settings
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <InputGroupButton
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Effort: ${currentEffort.name}`}
+                    className="gap-1 px-2"
+                    disabled={busy}
+                  >
+                    <span className="text-muted-foreground">Effort</span>
+                    {currentEffort.name}
+                    <ChevronDown className="size-3" />
+                  </InputGroupButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" side="top" className="w-36">
+                  <DropdownMenuLabel>Effort</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={currentEffort.id}
+                    onValueChange={setEffort}
+                  >
+                    {choices.efforts.map((item) => (
+                      <DropdownMenuRadioItem key={item.id} value={item.id}>
+                        {item.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <InputGroupButton
+                type={pending && onCancel ? "button" : "submit"}
+                size="icon-sm"
+                variant="default"
+                className="composer-send"
+                aria-label={
+                  pending && onCancel
+                    ? "Stop response"
+                    : pending
+                      ? "Sending question"
+                      : "Send"
+                }
+                disabled={pending && onCancel ? false : !canSend}
+                onClick={pending && onCancel ? onCancel : undefined}
+              >
+                {pending && onCancel ? (
+                  <Square />
+                ) : pending ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <ArrowUp />
+                )}
+              </InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+        </div>
         <span id={availabilityId} className="sr-only">
           {configured
             ? `Model: ${model?.name}. Enter to send. Shift+Enter for a new line.`
@@ -329,11 +333,21 @@ export function QuestionInput({
           {pending ? "Thinking…" : reading ? "Reading attachments…" : ""}
         </span>
       </form>
-      {(fileError || error) && (
-        <Alert variant="destructive">
-          <AlertDescription>{fileError || error}</AlertDescription>
-        </Alert>
+      {!configured && onConfigure && (
+        <div className="composer-availability">
+          <span>Connect a model to continue.</span>
+          <Button variant="ghost" size="sm" onClick={onConfigure}>
+            Open settings
+          </Button>
+        </div>
       )}
+      {fileError ? (
+        <FieldError role="alert">{fileError}</FieldError>
+      ) : error ? (
+        <RuntimeErrorNotice title="Could not complete the response">
+          {error}
+        </RuntimeErrorNotice>
+      ) : null}
     </div>
   );
 }

@@ -1,22 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ChevronRight,
-  ChevronsUpDown,
-  Home,
-  Library,
-  ListChecks,
-  Settings,
-  UserRound,
-} from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  FolderOpen,
+  LayoutDashboard,
+} from "@/components/ui/icons";
 import {
   Collapsible,
   CollapsibleContent,
@@ -38,6 +25,7 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import type { Project } from "@/features/projects/project-data";
 import type { LearningBook, ReaderLocation } from "@/types/book";
 
 export function LibrarySidebar({
@@ -45,18 +33,28 @@ export function LibrarySidebar({
   location,
   onNavigate,
   showContents = true,
-  onGettingStarted,
+  projects,
   gettingStarted,
 }: {
   book?: LearningBook;
   location: ReaderLocation;
   onNavigate: (location: ReaderLocation) => void;
   showContents?: boolean;
-  onGettingStarted: () => void;
+  projects: readonly Project[];
   gettingStarted?: ReactNode;
 }) {
   const [expanded, setExpanded] = useState<string[]>([]);
   const { isMobile, setOpenMobile } = useSidebar();
+  const projectTitle =
+    projects.find((project) => project.id === book?.id)?.title ?? book?.title;
+  const activeChapterId =
+    location.scale === "section" ? location.chapterId : undefined;
+  useEffect(() => {
+    if (activeChapterId)
+      setExpanded((ids) =>
+        ids.includes(activeChapterId) ? ids : [...ids, activeChapterId],
+      );
+  }, [book?.id, activeChapterId]);
   const navigate = (next: ReaderLocation) => {
     onNavigate(next);
     if (isMobile) setOpenMobile(false);
@@ -67,56 +65,71 @@ export function LibrarySidebar({
       className="book-sidebar"
       aria-label="Library navigation"
     >
-      <SidebarHeader className="flex-row items-center gap-1.5 px-2 pt-3 pb-0">
-        <div className="sidebar-brand flex h-10 min-w-0 flex-1 items-center gap-2.5 px-2">
-          <img
-            src="/logo.svg"
-            alt=""
-            width="32"
-            height="32"
-            className="sidebar-brand-mark size-8 shrink-0"
-          />
-          <span className="text-lg font-semibold tracking-tight">swartz</span>
-        </div>
+      <SidebarHeader className="secondary-navigation-header">
+        <span
+          className="truncate"
+          title={showContents && book ? projectTitle : undefined}
+        >
+          {showContents && book
+            ? projectTitle
+            : location.scale === "settings"
+              ? "Settings"
+              : "Workspace"}
+        </span>
       </SidebarHeader>
-      <SidebarContent className="gap-5 px-2 py-3">
-        <SidebarGroup className="p-0">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              {(
-                [
-                  { scale: "home", label: "Home", icon: Home },
-                  { scale: "library", label: "Library", icon: Library },
-                ] as const
-              ).map((item) => (
-                <SidebarMenuItem key={item.scale}>
-                  <SidebarMenuButton
-                    isActive={
-                      location.scale === item.scale ||
-                      (item.scale === "library" && location.scale === "project")
-                    }
-                    aria-current={
-                      location.scale === item.scale ||
-                      (item.scale === "library" && location.scale === "project")
-                        ? "page"
-                        : undefined
-                    }
-                    onClick={() => navigate({ scale: item.scale })}
-                    size="sm"
-                    className="px-3 text-[13px]"
-                  >
-                    <item.icon className="text-muted-foreground" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+      <SidebarContent className="sidebar-navigation">
+        {!showContents && (
+          <>
+            <SidebarGroup className="p-0" aria-label="Projects">
+              <SidebarGroupLabel className="sidebar-section-label">
+                Projects
+              </SidebarGroupLabel>
+              <SidebarMenu>
+                {projects.map((project) => (
+                  <SidebarMenuItem key={project.id}>
+                    <SidebarMenuButton
+                      className="sidebar-nav-button"
+                      onClick={() =>
+                        navigate({ scale: "project", projectId: project.id })
+                      }
+                    >
+                      <FolderOpen />
+                      <span>{project.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+              {!projects.length && (
+                <p className="sidebar-empty">Your projects will appear here.</p>
+              )}
+            </SidebarGroup>
+          </>
+        )}
+        {showContents && book && (
+          <SidebarGroup className="p-0" aria-label="Current project">
+            <SidebarGroupLabel className="sidebar-section-label">
+              Project
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  className="sidebar-nav-button"
+                  isActive={location.scale === "project"}
+                  onClick={() =>
+                    navigate({ scale: "project", projectId: book.id })
+                  }
+                >
+                  <LayoutDashboard className="text-muted-foreground" />
+                  <span>Overview</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          </SidebarGroup>
+        )}
         {showContents && book && book.chapters.length > 0 && (
           <SidebarGroup className="p-0" aria-label="Table of contents">
-            <SidebarGroupLabel className="mb-1 px-3 text-[11px] font-medium text-muted-foreground">
-              Contents
+            <SidebarGroupLabel className="sidebar-section-label">
+              Textbook
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
@@ -135,7 +148,7 @@ export function LibrarySidebar({
                   >
                     <SidebarMenuItem className="group/chapter">
                       <CollapsibleTrigger asChild>
-                        <SidebarMenuButton className="h-auto min-h-9 items-start px-3 py-2 text-[13px] text-muted-foreground [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible">
+                        <SidebarMenuButton className="sidebar-nav-button sidebar-chapter-button">
                           <ChevronRight className="mt-0.5 size-3.5 transition-transform duration-150 group-data-[state=open]/chapter:rotate-90" />
                           <span>{chapter.title}</span>
                         </SidebarMenuButton>
@@ -151,7 +164,7 @@ export function LibrarySidebar({
                                 <SidebarMenuSubButton
                                   asChild
                                   isActive={active}
-                                  className="h-auto min-h-8 w-full py-1.5 text-left text-[12px] leading-5 text-muted-foreground data-active:font-medium [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible"
+                                  className="sidebar-nav-button sidebar-section-button"
                                 >
                                   <button
                                     type="button"
@@ -181,53 +194,7 @@ export function LibrarySidebar({
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="gap-3 p-3">
-        {gettingStarted}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-auto w-full justify-start gap-3 px-2 py-2 text-left"
-              aria-label="Open profile menu"
-            >
-              <Avatar>
-                <AvatarFallback>
-                  <UserRound aria-hidden="true" />
-                </AvatarFallback>
-              </Avatar>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span>You</span>
-                <span className="truncate text-xs font-normal text-muted-foreground">
-                  Personal workspace
-                </span>
-              </span>
-              <ChevronsUpDown
-                data-icon="inline-end"
-                className="text-muted-foreground"
-              />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            side="top"
-            sideOffset={8}
-            className="w-56"
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                onSelect={() => navigate({ scale: "settings" })}
-              >
-                <Settings />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={onGettingStarted}>
-                <ListChecks />
-                Getting started
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarFooter>
+      <SidebarFooter className="sidebar-footer">{gettingStarted}</SidebarFooter>
     </Sidebar>
   );
 }

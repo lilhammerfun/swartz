@@ -1,0 +1,244 @@
+/* Shared values from agent-studio-frontend: foundation.css and the neutral appearance preset. */
+:root {
+  /* 产品字体只在此定义；文档、图表与编辑器的内容排版保留其数据语义。 */
+  --font-body:
+    -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  --font-display: var(--font-body);
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --font-password: "password", var(--font-body);
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* 角色层级：标题、正文、控件、辅助信息、输入与代码共享同一入口。 */
+  --text-micro-size: 11px;
+  --text-micro-line: 16px;
+  --text-caption-size: 12px;
+  --text-caption-line: 18px;
+  --text-compact-size: 13px;
+  --text-compact-line: 20px;
+  --text-body-size: 14px;
+  --text-body-line: 22px;
+  --text-control-size: var(--text-body-size);
+  --text-control-line: 20px;
+  --text-navigation-size: var(--text-body-size);
+  --text-navigation-line: var(--text-control-line);
+  --text-menu-size: var(--text-caption-size);
+  --text-menu-line: var(--text-caption-line);
+  --text-composer-size: 15px;
+  --text-composer-line: 22px;
+  --text-section-title-size: 16px;
+  --text-section-title-line: 24px;
+  --text-subheading-size: 18px;
+  --text-subheading-line: 28px;
+  --text-panel-title-size: 20px;
+  --text-panel-title-line: 28px;
+  --text-hero-title-size: 24px;
+  --text-hero-title-line: 36px;
+  --text-page-title-size: 28px;
+  --text-page-title-line: 40px;
+  --text-metric-size: 32px;
+  --text-metric-line: 36px;
+  --text-illustration-size: 36px;
+  --text-illustration-line: 48px;
+  /* Login introduction follows the AgentOS Web type scale. */
+  --text-login-hero-size: 44px;
+  --text-login-hero-line: 58px;
+  --text-login-hero-compact-size: 40px;
+  --text-login-hero-compact-line: 56px;
+  --text-login-hero-narrow-line: 50px;
+  --text-login-title-compact-size: 26px;
+  --text-code-size: var(--text-caption-size);
+  --text-code-line: var(--text-caption-line);
+  --text-code-relative-size: 0.875em;
+  --text-relative-size: 1em;
+  --text-size-hidden: 0;
+  --text-line-solid: 1;
+  --text-line-tight: 1.25;
+  --text-line-normal: 1.5;
+  --text-line-prose: 1.7;
+  --text-line-code: 1.6;
+  --text-line-hidden: 0;
+  --text-large-control-line: 56px;
+  --text-avatar-line: 68px;
+  --text-tracking-normal: 0;
+  --text-tracking-title: -0.01em;
+  --text-tracking-label: 0.04em;
+
+  /* 与 Web 端共享的交互形状；hover 不临时改变圆角。 */
+  --menu-radius: 16px;
+  --menu-padding: 4px;
+  --menu-submenu-gap: 4px;
+  --menu-viewport-padding: 8px;
+  --menu-scroll-fade-size: 12px;
+  --scrollbar-size: 10px;
+  --scrollbar-inset: 2px;
+  --menu-item-radius: calc(var(--menu-radius) - var(--menu-padding));
+  --menu-corner-shape: superellipse(1.5);
+  --overlay-radius: var(--menu-radius);
+  --overlay-corner-shape: var(--menu-corner-shape);
+  --overlay-control-radius: var(--menu-item-radius);
+  --menu-item-height: 32px;
+  --menu-item-gap: 8px;
+  --menu-item-padding: 6px 8px;
+  --radius-control: 8px;
+  --radius-input: 6px;
+  --radius-navigation: 12px;
+  --corner-navigation: superellipse(1.5);
+  --radius-icon-action: 50%;
+  --icon-stroke-width: 1.75;
+
+  /* Secondary navigation follows the Web navigation row and grouping scale. */
+  --navigation-width: 240px;
+  --navigation-inset: 8px;
+  --navigation-row-inset: 8px;
+  --navigation-row-gap: 8px;
+  --navigation-row-height: 28px;
+  --navigation-item-gap: 1px;
+  --navigation-group-gap: 16px;
+  --navigation-label-gap: 8px;
+  --navigation-header-height: 56px;
+  --navigation-icon-size: 16px;
+  --navigation-brand-size: 22px;
+  --navigation-indent: 24px;
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-agent-group-avatar: 10px;
+  --radius-full: 9999px;
+  --radius-card: 16px;
+  --radius-message: 16px;
+  --radius-composer: 24px;
+  --radius-composer-inset: 20px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 350ms;
+
+  /* State */
+  --opacity-disabled: 0.55;
+
+  /* Shell layout */
+  --shell-content-radius: 14px;
+  --shell-macos-controls-space: 96px;
+  --shell-pad: 16px;
+  --shell-gap: 16px;
+  --shell-nav-width: 240px;
+  --shell-topbar-height: 48px;
+  --tool-panel-width: var(--shell-nav-width);
+  --statusbar-right-space: var(--tool-panel-width);
+
+  /* 兼容已有字号名称；取值仍由语义角色管理。 */
+  --font-size-base: var(--text-body-size);
+  --font-size-lg: var(--text-section-title-size);
+  --font-size-sm: var(--text-compact-size);
+  --font-size-xs: var(--text-caption-size);
+  --font-size-2xs: var(--text-micro-size);
+}
+:root {
+  --color-text-primary: #0d0d0d;
+  --color-shell-ink: #0d0d0d;
+  --color-text-secondary: #5e5e5e;
+  --color-shell-muted: #5e5e5e;
+  --color-text-tertiary: #737373;
+  --color-text-placeholder: #737373;
+  --color-text-disabled: #b4b4b4;
+  --color-text-inverse: #ffffff;
+  --color-tooltip-background: var(--color-text-primary);
+  --color-tooltip-foreground: var(--color-shell-content);
+  --color-scrollbar-thumb: #a8a8a8;
+  --color-shell-sidebar: #fcfcfc;
+  --color-shell-content: #ffffff;
+  --color-surface-card: #ffffff;
+  --color-surface-popover: #ffffff;
+  --color-shell-chrome: #f6f6f6;
+  --color-shell-rail: #f6f6f6;
+  --color-surface-muted: #f4f4f4;
+  --color-interaction-hover: #eff0f0;
+  --color-interaction-selected: #eff0f0;
+  --color-navigation-primary-highlight: #e9eaea;
+  --color-shell-active: #e9eaea;
+  --color-border-default: #dfdfdf;
+  --color-border-input: #dfdfdf;
+  --color-border-strong: #dfdfdf;
+  --color-shell-border: #dfdfdf;
+  --color-border-hover: #dfdfdf;
+  --color-action-primary: #2563eb;
+  --color-border-focus: #2563eb;
+  --color-action-primary-text: #ffffff;
+  --color-action-primary-hover: #2259d0;
+  --color-action-primary-subtle: #e7edfa;
+  --color-control-emphasis: #0d0d0d;
+  --color-control-emphasis-text: #ffffff;
+  --color-control-emphasis-hover: #2a2a2a;
+  --color-feedback-success: #087f3e;
+  --color-feedback-success-subtle: #eaf3ee;
+  --color-feedback-warning: #975000;
+  --color-feedback-warning-subtle: #f4efe9;
+  --color-feedback-danger: #c02727;
+  --color-feedback-danger-subtle: #f8ecec;
+  --color-feedback-info: #2563eb;
+  --color-feedback-info-subtle: #ecf1fb;
+  --color-backdrop: rgba(0, 0, 0, 0.35);
+  --effect-menu-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 8px 16px -4px rgba(0, 0, 0, 0.12);
+  --effect-shell-content-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+.dark {
+  --color-scrollbar-thumb: #656565;
+  --color-text-primary: #f5f5f5;
+  --color-shell-ink: #f5f5f5;
+  --color-text-secondary: #aaaaaa;
+  --color-shell-muted: #aaaaaa;
+  --color-text-tertiary: #8f8f8f;
+  --color-text-placeholder: #8f8f8f;
+  --color-text-disabled: #5a5a5a;
+  --color-text-inverse: #0d0d0d;
+  --color-shell-sidebar: #181818;
+  --color-shell-content: #222222;
+  --color-surface-card: #222222;
+  --color-surface-popover: #222222;
+  --color-shell-chrome: #2b2b2b;
+  --color-shell-rail: #2b2b2b;
+  --color-surface-muted: #2b2b2b;
+  --color-interaction-hover: #262626;
+  --color-interaction-selected: #262626;
+  --color-navigation-primary-highlight: #2e2e2e;
+  --color-shell-active: #2e2e2e;
+  --color-border-default: #3e3e3e;
+  --color-border-input: #3e3e3e;
+  --color-border-strong: #3e3e3e;
+  --color-shell-border: #3e3e3e;
+  --color-border-hover: #3e3e3e;
+  --color-action-primary: #8baeff;
+  --color-border-focus: #8baeff;
+  --color-action-primary-text: #0d0d0d;
+  --color-action-primary-hover: #98b7fe;
+  --color-action-primary-subtle: #2d3342;
+  --color-control-emphasis: #f5f5f5;
+  --color-control-emphasis-text: #0d0d0d;
+  --color-control-emphasis-hover: #dadada;
+  --color-feedback-success: #75d9a1;
+  --color-feedback-success-subtle: #24312a;
+  --color-feedback-warning: #ffd080;
+  --color-feedback-warning-subtle: #363026;
+  --color-feedback-danger: #ffa3a3;
+  --color-feedback-danger-subtle: #362a2a;
+  --color-feedback-info: #8baeff;
+  --color-feedback-info-subtle: #272c36;
+  --color-backdrop: rgba(0, 0, 0, 0.64);
+  --effect-menu-shadow: 0 0 0 1px #3e3e3e, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --effect-shell-content-shadow:
+    0 0 0 1px #3e3e3e, 0 8px 24px rgba(0, 0, 0, 0.35);
+}

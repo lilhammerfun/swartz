@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import {
   Dialog,
   DialogContent,
@@ -67,11 +66,7 @@ export function NewBookDialog({
               autoComplete="off"
             />
           </Field>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          {error && <FieldError>{error}</FieldError>}
           <DialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0">
             <Button
               type="button"

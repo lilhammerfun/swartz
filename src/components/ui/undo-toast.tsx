@@ -55,11 +55,9 @@ function UndoToast({
         clock.current.started = performance.now();
         clock.current.paused = false;
       }}
-      className="undo-toast pointer-events-auto flex min-h-11 items-center gap-4 rounded-xl border border-border/60 bg-popover px-4 py-2 text-popover-foreground shadow-[0_4px_24px_-8px_rgb(0_0_0/0.18)]"
+      data-slot="toast"
     >
-      <Toast.Title className="min-w-0 flex-1 text-[13px] font-normal">
-        {notice.title}
-      </Toast.Title>
+      <Toast.Title className="min-w-0 flex-1">{notice.title}</Toast.Title>
       <span
         aria-hidden="true"
         className="min-w-5 text-right text-xs text-muted-foreground tabular-nums"
@@ -73,7 +71,7 @@ function UndoToast({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 shrink-0 px-2 text-[13px] font-medium"
+          className="toast-action"
           onClick={(event) => {
             if (!notice.onUndo()) event.preventDefault();
           }}
@@ -100,7 +98,7 @@ export function UndoToasts({
       <Toast.Viewport
         hotkey={["altKey", "KeyT"]}
         label="Notifications (Alt+T)"
-        className="pointer-events-none fixed top-6 left-1/2 z-[1000] flex w-max max-w-[calc(100vw-32px)] -translate-x-1/2 flex-col gap-2 outline-none"
+        data-slot="toast-viewport"
       />
     </Toast.Provider>
   );

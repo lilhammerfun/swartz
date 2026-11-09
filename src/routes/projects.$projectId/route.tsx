@@ -18,7 +18,7 @@ export default function ProjectRoute({ loaderData }: Route.ComponentProps) {
     <ProjectPage
       key={loaderData.project.id}
       detail={loaderData}
-      onStart={useOutletContext<AppRouteContext>().project.onStart}
+      {...useOutletContext<AppRouteContext>().project}
     />
   );
 }

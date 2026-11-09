@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Field,
-  FieldGroup,
-  FieldContent,
-  FieldLabel,
-  FieldDescription,
-} from "@/components/ui/field";
+import { PasswordInput } from "@/components/ui/password-input";
+import { SettingRow } from "@/components/ui/settings-layout";
+import { RuntimeErrorNotice } from "@/components/ui/feedback";
 import {
   normalizeBaseUrl,
   isLocalBase,
@@ -73,104 +66,76 @@ export function ModelSettingsForm({
       }}
       className="space-y-4"
     >
-      <Card className="gap-0 py-0 ring-border/60">
-        <FieldGroup className="gap-0 divide-y divide-border/60">
-          <Field
-            orientation="horizontal"
-            className="grid grid-cols-1 items-center gap-3 p-4 has-[>[data-slot=field-content]]:items-center @min-[520px]/field-group:grid-cols-[1fr_264px] @min-[520px]/field-group:gap-6"
-          >
-            <FieldContent className="min-w-0 gap-1">
-              <FieldLabel htmlFor="model-base-url" className="text-[13px]">
-                API base URL
-              </FieldLabel>
-              <FieldDescription
-                id="model-base-url-description"
-                className="text-xs leading-5"
-              >
-                Requires support for the Responses API.
-              </FieldDescription>
-            </FieldContent>
-            <Input
-              id="model-base-url"
-              type="url"
-              value={baseUrl}
-              onChange={(event) => setBaseUrl(event.currentTarget.value)}
-              disabled={saving || !backendAvailable}
-              required
-              placeholder="e.g. https://api.deepseek.com"
-              aria-describedby="model-base-url-description"
-              autoComplete="off"
-              spellCheck={false}
-              className="bg-background text-[13px] md:text-[13px]"
-            />
-          </Field>
-          <Field
-            orientation="horizontal"
-            className="grid grid-cols-1 items-center gap-3 p-4 has-[>[data-slot=field-content]]:items-center @min-[520px]/field-group:grid-cols-[1fr_264px] @min-[520px]/field-group:gap-6"
-          >
-            <FieldContent className="min-w-0 gap-1">
-              <FieldLabel htmlFor="model-id" className="text-[13px]">
-                Model ID
-              </FieldLabel>
-              <FieldDescription
-                id="model-id-description"
-                className="text-xs leading-5"
-              >
-                The model identifier from your provider.
-              </FieldDescription>
-            </FieldContent>
-            <Input
-              id="model-id"
-              value={model}
-              onChange={(event) => setModel(event.currentTarget.value)}
-              disabled={saving || !backendAvailable}
-              required
-              placeholder="e.g. deepseek-flash"
-              aria-describedby="model-id-description"
-              autoComplete="off"
-              spellCheck={false}
-              className="bg-background text-[13px] md:text-[13px]"
-            />
-          </Field>
-          <Field
-            orientation="horizontal"
-            className="grid grid-cols-1 items-center gap-3 p-4 has-[>[data-slot=field-content]]:items-center @min-[520px]/field-group:grid-cols-[1fr_264px] @min-[520px]/field-group:gap-6"
-          >
-            <FieldContent className="min-w-0 gap-1">
-              <FieldLabel htmlFor="model-api-key" className="text-[13px]">
-                API key
-              </FieldLabel>
-              <FieldDescription
-                id="model-api-key-description"
-                className="text-xs leading-5"
-              >
-                {backendAvailable
-                  ? "Stored securely in your system keyring."
-                  : "Open the desktop app to configure model access."}
-              </FieldDescription>
-            </FieldContent>
-            <Input
-              id="model-api-key"
-              type="password"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.currentTarget.value)}
-              disabled={saving || !backendAvailable}
-              required={!keepingKey && !isLocalBase(baseUrl)}
-              placeholder={
-                keepingKey ? "Leave blank to keep the saved key" : "API key"
-              }
-              aria-describedby="model-api-key-description"
-              autoComplete="off"
-              spellCheck={false}
-              className="bg-background text-[13px] md:text-[13px]"
-            />
-          </Field>
-        </FieldGroup>
-      </Card>
+      <div className="setting-group">
+        <SettingRow
+          label="API base URL"
+          htmlFor="model-base-url"
+          description="Requires support for the Responses API."
+        >
+          <Input
+            id="model-base-url"
+            type="url"
+            value={baseUrl}
+            onChange={(event) => setBaseUrl(event.currentTarget.value)}
+            disabled={saving || !backendAvailable}
+            required
+            placeholder="e.g. https://api.deepseek.com"
+            aria-describedby="model-base-url-description"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Model ID"
+          htmlFor="model-id"
+          description="The model identifier from your provider."
+        >
+          <Input
+            id="model-id"
+            value={model}
+            onChange={(event) => setModel(event.currentTarget.value)}
+            disabled={saving || !backendAvailable}
+            required
+            placeholder="e.g. deepseek-flash"
+            aria-describedby="model-id-description"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </SettingRow>
+        <SettingRow
+          label="API key"
+          htmlFor="model-api-key"
+          description={
+            backendAvailable
+              ? "Stored securely in your system keyring."
+              : "Open the desktop app to configure model access."
+          }
+        >
+          <PasswordInput
+            id="model-api-key"
+            value={apiKey}
+            onChange={(event) => setApiKey(event.currentTarget.value)}
+            disabled={saving || !backendAvailable}
+            required={!keepingKey && !isLocalBase(baseUrl)}
+            placeholder={
+              keepingKey ? "Leave blank to keep the saved key" : "API key"
+            }
+            aria-describedby="model-api-key-description"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </SettingRow>
+      </div>
       {(error || loadError) && (
-        <Alert variant="destructive">
-          <AlertDescription>{error || loadError}</AlertDescription>
-        </Alert>
+        <RuntimeErrorNotice
+          title={
+            loadError
+              ? "Could not load model settings"
+              : "Could not save model settings"
+          }
+        >
+          {error || loadError}
+        </RuntimeErrorNotice>
       )}
       <div className="flex items-center justify-end gap-3">
         <span role="status" className="text-xs text-muted-foreground">
@@ -179,12 +144,13 @@ export function ModelSettingsForm({
         <Button
           variant="outline"
           type="submit"
+          loading={saving}
           size="sm"
           disabled={
             saving || !backendAvailable || !model.trim() || !baseUrl.trim()
           }
         >
-          {saving && <LoaderCircle className="animate-spin" />}Save changes
+          Save changes
         </Button>
       </div>
     </form>

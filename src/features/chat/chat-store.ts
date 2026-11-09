@@ -12,6 +12,7 @@ export interface ConversationMessage {
 }
 export interface ChatRequest {
   id: string;
+  kind?: "question" | "start_learning";
   status: "pending" | "error" | "interrupted";
   userMessageId: string;
   options: ModelRequestOptions;
@@ -162,8 +163,13 @@ export function parseChat(raw: string): ChatSnapshot {
         !["pending", "error", "interrupted"].includes(
           request.status as string,
         ) ||
-        request.userMessageId !== last?.id ||
-        last?.role !== "user" ||
+        (request.kind !== undefined &&
+          !["question", "start_learning"].includes(request.kind as string)) ||
+        (request.kind === "start_learning"
+          ? !session.bookId ||
+            !text(request.userMessageId, 128) ||
+            !request.userMessageId
+          : request.userMessageId !== last?.id || last?.role !== "user") ||
         !optionsValid(request.options) ||
         (request.error !== undefined && !text(request.error, 2000)))
     )
@@ -351,16 +357,16 @@ export function startBookSession(
   createNew = false,
 ): { snapshot: ChatSnapshot; session: ChatSession } {
   const current = readChat(storage);
-  const existing = current.sessions.find(
-    (session) => session.bookId === book.id,
-  );
+  const existing = current.sessions
+    .filter((session) => session.bookId === book.id)
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))[0];
   if (existing && !createNew) return { snapshot: current, session: existing };
   let session!: ChatSession;
   const snapshot = updateChat(storage, (next) => {
     const now = new Date().toISOString();
     session = {
       id: `chat-${crypto.randomUUID()}`,
-      title: "New session",
+      title: book.title,
       bookId: book.id,
       createdAt: now,
       updatedAt: now,
@@ -376,6 +382,33 @@ export function startBookSession(
 export interface FailedChatRequest {
   requestId: string;
   error: string;
+}
+
+/** Start is a business input, never a fabricated user question. Keep any unsent draft. */
+export function queueStartLearning(
+  storage: ChatStorage,
+  sessionId: string,
+  options: ModelRequestOptions,
+): { snapshot: ChatSnapshot; session: ChatSession } {
+  let session!: ChatSession;
+  const snapshot = updateChat(storage, (next) => {
+    const current = next.sessions.find((item) => item.id === sessionId);
+    if (!current?.bookId) throw new Error("Open a project to start learning.");
+    if (current.request)
+      throw new Error("Retry the unanswered request before continuing.");
+    if (!optionsValid(options))
+      throw new Error("Select valid model and effort options.");
+    current.request = {
+      id: crypto.randomUUID(),
+      kind: "start_learning",
+      status: "pending",
+      userMessageId: crypto.randomUUID(),
+      options: { ...options },
+    };
+    current.updatedAt = new Date().toISOString();
+    session = current;
+  });
+  return { snapshot, session };
 }
 // Recover only attempts whose result this tab could not persist. Other tabs' live requests stay pending.
 export function restoreFailedRequests(

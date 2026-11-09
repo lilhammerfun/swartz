@@ -1,4 +1,4 @@
-import { FileText, Sparkles } from "lucide-react";
+import { FileText } from "@/components/ui/icons";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import {
   Message,
@@ -37,13 +37,11 @@ export function AnnotationMessage({
           className={`gap-2 px-0 ${question ? "justify-end" : ""}`}
         >
           {!question && (
-            <Sparkles aria-hidden="true" className="size-3.5 text-[#9473ac]" />
+            <img src="/logo.svg" alt="" className="size-4 sidebar-brand-mark" />
           )}
-          <span className="font-medium text-foreground">
-            {question ? "Question" : "AI answer"}
-          </span>
+          {question && <span>Question</span>}
           {createdAt && (
-            <time className="text-[11px] font-normal" dateTime={createdAt}>
+            <time className="text-micro font-normal" dateTime={createdAt}>
               {new Intl.DateTimeFormat("en-US", {
                 month: "short",
                 day: "numeric",
@@ -52,16 +50,12 @@ export function AnnotationMessage({
           )}
         </MessageHeader>
         <Bubble
-          variant={question ? "muted" : "ghost"}
+          variant={question ? "tinted" : "ghost"}
           align={question ? "end" : "start"}
           className={question ? "max-w-full" : "w-full max-w-full"}
         >
           <BubbleContent
-            className={
-              question
-                ? "space-y-3 rounded-2xl rounded-tr-sm px-3.5 py-2.5"
-                : "w-full space-y-3"
-            }
+            className={question ? "space-y-3 px-4 py-3" : "w-full space-y-3"}
           >
             <div className="discussion-markdown text-sm leading-6">
               <MarkdownBlock

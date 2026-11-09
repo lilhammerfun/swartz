@@ -11,7 +11,10 @@ export interface AppRouteContext {
   home: ComponentProps<typeof HomePage>;
   library: ComponentProps<typeof LibraryPage>;
   settings: ComponentProps<typeof SettingsPage>;
-  project: { onStart: (detail: ProjectDetail) => void };
+  project: {
+    onStart: (detail: ProjectDetail) => void;
+    onRead: (detail: ProjectDetail) => void;
+  };
   conversation: ReactNode;
   reader: ComponentProps<typeof ReadingDocument> | null;
   book: LearningBook | undefined;

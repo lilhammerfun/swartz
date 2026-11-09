@@ -7,6 +7,8 @@ function ScrollArea({
   children,
   viewportRef,
   viewportProps,
+  type = "hover",
+  scrollHideDelay = 300,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
   viewportRef?: React.Ref<HTMLDivElement>;
@@ -17,6 +19,8 @@ function ScrollArea({
       data-slot="scroll-area"
       className={cn("relative", className)}
       {...props}
+      type={type}
+      scrollHideDelay={scrollHideDelay}
     >
       <ScrollAreaPrimitive.Viewport
         ref={viewportRef}
