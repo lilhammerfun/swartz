@@ -1,6 +1,4 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { X } from "@/components/ui/icons";
-import { IconButton } from "@/components/ui/IconButton";
 import { Button } from "@/components/ui/button";
 import { MessageGroup } from "@/components/ui/message";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -146,21 +144,10 @@ export function ChatPage({
         </div>
       </ScrollArea>
       <div className="conversation-composer">
-        {draftPassage && (
-          <div className="conversation-draft-quote">
-            <PassageQuote quote={draftPassage.quote} />
-            <IconButton
-              label="Remove quoted passage"
-              size="icon-xs"
-              onClick={onRemovePassage}
-              disabled={composer.pending}
-            >
-              <X />
-            </IconButton>
-          </div>
-        )}
         <QuestionInput
           {...composer}
+          quotedPassage={draftPassage?.quote}
+          onRemovePassage={onRemovePassage}
           onSend={(submission) => {
             atBottom.current = true;
             return composer.onSend(submission);

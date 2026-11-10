@@ -791,16 +791,6 @@ a {
   outline-offset: 10px;
   border-radius: 4px;
 }
-.conversation-draft-quote {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin: 0 0 16px;
-}
-.conversation-draft-quote > :first-child {
-  min-width: 0;
-  flex: 1;
-}
 .conversation-pending {
   display: flex;
   align-items: center;

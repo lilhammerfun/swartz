@@ -42,6 +42,7 @@ import {
 import type { PromptAttachment } from "@/types/book";
 import { promptChoices, type PromptSubmission } from "./prompt-options";
 import { readPromptAttachments } from "./prompt-attachments";
+import { PassagePreview } from "./PassagePreview";
 
 // Composition and controls follow shadcn's PromptInputDemo; requests and drafts belong to the reader.
 export function QuestionInput({
@@ -61,6 +62,8 @@ export function QuestionInput({
   attachments,
   onAttachmentsChange,
   onConfigure,
+  quotedPassage,
+  onRemovePassage,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -71,6 +74,8 @@ export function QuestionInput({
   attachments?: PromptAttachment[];
   onAttachmentsChange?: (attachments: PromptAttachment[]) => void;
   onConfigure?: () => void;
+  quotedPassage?: string;
+  onRemovePassage?: () => void;
   settings: ModelSettings;
   pending: boolean;
   busy: boolean;
@@ -163,6 +168,22 @@ export function QuestionInput({
         />
         <div className="composer-frame">
           <InputGroup aria-busy={pending} className="prompt-composer">
+            {quotedPassage && (
+              <InputGroupAddon align="block-start" className="px-3 pt-3 pb-0">
+                <PassagePreview
+                  quote={quotedPassage}
+                  disabled={pending}
+                  onRemove={
+                    onRemovePassage
+                      ? () => {
+                          onRemovePassage();
+                          form.current?.querySelector("textarea")?.focus();
+                        }
+                      : undefined
+                  }
+                />
+              </InputGroupAddon>
+            )}
             {files.length > 0 && (
               <InputGroupAddon align="block-start" className="flex-wrap">
                 {files.map((file) => (
