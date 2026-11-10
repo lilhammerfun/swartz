@@ -1530,6 +1530,73 @@ a {
   min-height: 0;
   overflow: hidden;
 }
+.document-outline-rail {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 6px;
+  z-index: 1;
+  width: 20px;
+  max-height: calc(100% - 56px);
+}
+.document-outline-trigger[data-slot="button"] {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+}
+.document-outline-mark {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+.document-outline-mark > span {
+  flex-shrink: 0;
+  height: 3px;
+  background: var(--muted-foreground);
+  opacity: 0.25;
+}
+.document-outline-mark[data-active="true"] > span {
+  background: var(--foreground);
+  opacity: 0.55;
+}
+.document-outline-popover {
+  max-width: calc(100vw - 16px);
+}
+.document-outline-navigation {
+  max-height: min(
+    400px,
+    calc(var(--radix-popover-content-available-height) - 24px)
+  );
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.document-outline-link {
+  display: block;
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: var(--radius-control);
+  font-weight: var(--font-weight-regular);
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.document-outline-link:hover,
+.document-outline-link:focus-visible {
+  background: var(--accent);
+}
+.document-outline-link[aria-current="location"] {
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
 .support-content-panel .reading-document {
   padding: 28px 28px 40px;
 }

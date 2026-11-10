@@ -19,6 +19,7 @@
     "test": "node --experimental-strip-types --test src/features/annotations/reading-annotations.test.ts src/features/reader/markdown-annotations.test.ts src/features/model/model-api.test.ts src/features/model/model-service.test.ts src/features/chat/chat-store.test.ts src/features/chat/project-conversation.test.ts src/features/chat/tutor-request.test.ts src/features/chat/tutor-service.test.ts src/features/home/recent-learning.test.ts src/features/projects/project-data.test.ts src/features/projects/plan-mindmap-data.test.ts src/app/route-location.test.ts src/app/workspace-loader.test.ts"
   },
   "dependencies": {
+    "@ark-ui/react": "5.40.0",
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource/source-serif-4": "5.3.1",
     "@react-router/node": "8.5.0",
