@@ -655,10 +655,6 @@ export default function App() {
     },
     project: {
       onStart: startProject,
-      onRead: (detail) =>
-        navigateToBook(
-          integrations.project(projectBook(detail.project, detail)),
-        ),
     },
     settings: {
       settings: modelSettings,

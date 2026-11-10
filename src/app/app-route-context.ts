@@ -13,7 +13,6 @@ export interface AppRouteContext {
   settings: ComponentProps<typeof SettingsPage>;
   project: {
     onStart: (detail: ProjectDetail) => void;
-    onRead: (detail: ProjectDetail) => void;
   };
   conversation: ReactNode;
   reader: ComponentProps<typeof ReadingDocument> | null;

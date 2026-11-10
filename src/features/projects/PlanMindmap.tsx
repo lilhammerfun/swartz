@@ -326,7 +326,7 @@ function PlanMindmapView({
     <div className="plan-mindmap" ref={setPopoverContainer}>
       <div className="plan-mindmap-toolbar">
         <div className="plan-mindmap-heading">
-          <span className="section-meta">Plan connections</span>
+          <h2>Learning plan</h2>
           {overview && (
             <Popover>
               <PopoverTrigger asChild>
