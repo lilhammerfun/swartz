@@ -215,7 +215,7 @@
   background: var(--color-shell-sidebar);
 }
 .secondary-navigation-drawer > button {
-  top: 14px;
+  top: calc((var(--navigation-header-height) - 32px) / 2);
   right: 12px;
 }
 .chat-input-toolbar [data-slot="button"] {

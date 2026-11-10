@@ -100,7 +100,8 @@
   --navigation-item-gap: 1px;
   --navigation-group-gap: 16px;
   --navigation-label-gap: 8px;
-  --navigation-header-height: 56px;
+  --navigation-header-height: 48px;
+  --navigation-header-gap: 4px;
   --navigation-icon-size: 16px;
   --navigation-brand-size: 22px;
   --navigation-indent: 24px;

@@ -6,6 +6,7 @@ import IconArrowRight from "@tabler/icons-react/dist/esm/icons/IconArrowRight.mj
 import IconArrowUp from "@tabler/icons-react/dist/esm/icons/IconArrowUp.mjs";
 import IconArrowsMaximize from "@tabler/icons-react/dist/esm/icons/IconArrowsMaximize.mjs";
 import IconArrowsMinimize from "@tabler/icons-react/dist/esm/icons/IconArrowsMinimize.mjs";
+import IconBell from "@tabler/icons-react/dist/esm/icons/IconBell.mjs";
 import IconBook from "@tabler/icons-react/dist/esm/icons/IconBook.mjs";
 import IconBookFilled from "@tabler/icons-react/dist/esm/icons/IconBookFilled.mjs";
 import IconBooks from "@tabler/icons-react/dist/esm/icons/IconBooks.mjs";
@@ -13,6 +14,7 @@ import IconCheck, {
   __iconNode as checkNodes,
 } from "@tabler/icons-react/dist/esm/icons/IconCheck.mjs";
 import IconChevronDown from "@tabler/icons-react/dist/esm/icons/IconChevronDown.mjs";
+import IconChevronLeft from "@tabler/icons-react/dist/esm/icons/IconChevronLeft.mjs";
 import IconChevronRight from "@tabler/icons-react/dist/esm/icons/IconChevronRight.mjs";
 import IconCircle, {
   __iconNode as circleNodes,
@@ -22,10 +24,13 @@ import IconCircleDot, {
   __iconNode as circleDotNodes,
 } from "@tabler/icons-react/dist/esm/icons/IconCircleDot.mjs";
 import IconCopy from "@tabler/icons-react/dist/esm/icons/IconCopy.mjs";
+import IconCpu from "@tabler/icons-react/dist/esm/icons/IconCpu.mjs";
+import IconDatabase from "@tabler/icons-react/dist/esm/icons/IconDatabase.mjs";
 import IconDots from "@tabler/icons-react/dist/esm/icons/IconDots.mjs";
 import IconEye from "@tabler/icons-react/dist/esm/icons/IconEye.mjs";
 import IconEyeOff from "@tabler/icons-react/dist/esm/icons/IconEyeOff.mjs";
 import IconFileText from "@tabler/icons-react/dist/esm/icons/IconFileText.mjs";
+import IconFolder from "@tabler/icons-react/dist/esm/icons/IconFolder.mjs";
 import IconFolderOpen from "@tabler/icons-react/dist/esm/icons/IconFolderOpen.mjs";
 import IconHome from "@tabler/icons-react/dist/esm/icons/IconHome.mjs";
 import IconHomeFilled from "@tabler/icons-react/dist/esm/icons/IconHomeFilled.mjs";
@@ -41,6 +46,7 @@ import IconMessage from "@tabler/icons-react/dist/esm/icons/IconMessage.mjs";
 import IconMessageCirclePlus from "@tabler/icons-react/dist/esm/icons/IconMessageCirclePlus.mjs";
 import IconMessages from "@tabler/icons-react/dist/esm/icons/IconMessages.mjs";
 import IconMinus from "@tabler/icons-react/dist/esm/icons/IconMinus.mjs";
+import IconPalette from "@tabler/icons-react/dist/esm/icons/IconPalette.mjs";
 import IconPlus from "@tabler/icons-react/dist/esm/icons/IconPlus.mjs";
 import IconSearch from "@tabler/icons-react/dist/esm/icons/IconSearch.mjs";
 import IconSettings from "@tabler/icons-react/dist/esm/icons/IconSettings.mjs";
@@ -105,6 +111,7 @@ export const ArrowRight = /* @__PURE__ */ productIcon(
   "arrow-right",
 );
 export const ArrowUp = /* @__PURE__ */ productIcon(IconArrowUp, "arrow-up");
+export const Bell = /* @__PURE__ */ productIcon(IconBell, "bell");
 export const BookFilled = /* @__PURE__ */ productIcon(
   IconBookFilled,
   "book",
@@ -124,6 +131,10 @@ export const ChevronRight = /* @__PURE__ */ productIcon(
   IconChevronRight,
   "chevron-right",
 );
+export const ChevronLeft = /* @__PURE__ */ productIcon(
+  IconChevronLeft,
+  "chevron-left",
+);
 export const Circle = /* @__PURE__ */ productIcon(IconCircle, "circle");
 export const CircleAlert = /* @__PURE__ */ productIcon(
   IconAlertCircle,
@@ -134,9 +145,12 @@ export const CircleDot = /* @__PURE__ */ productIcon(
   "circle-dot",
 );
 export const Copy = /* @__PURE__ */ productIcon(IconCopy, "copy");
+export const Cpu = /* @__PURE__ */ productIcon(IconCpu, "cpu");
+export const Database = /* @__PURE__ */ productIcon(IconDatabase, "database");
 export const Eye = /* @__PURE__ */ productIcon(IconEye, "eye");
 export const EyeOff = /* @__PURE__ */ productIcon(IconEyeOff, "eye-off");
 export const FileText = /* @__PURE__ */ productIcon(IconFileText, "file-text");
+export const Folder = /* @__PURE__ */ productIcon(IconFolder, "folder");
 export const FolderOpen = /* @__PURE__ */ productIcon(
   IconFolderOpen,
   "folder-open",
@@ -182,6 +196,7 @@ export const Minimize = /* @__PURE__ */ productIcon(
 );
 export const Minus = /* @__PURE__ */ productIcon(IconMinus, "minus");
 export const MoreHorizontal = /* @__PURE__ */ productIcon(IconDots, "dots");
+export const Palette = /* @__PURE__ */ productIcon(IconPalette, "palette");
 export const PanelLeft = /* @__PURE__ */ productIcon(
   IconLayoutSidebar,
   "layout-sidebar",
