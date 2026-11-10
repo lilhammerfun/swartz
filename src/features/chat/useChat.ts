@@ -280,7 +280,7 @@ export function useChat() {
         else delete session.draftPassage;
       }),
     startSession: (
-      book: LearningBook,
+      book: Pick<LearningBook, "id" | "title">,
       createNew = false,
     ): string | undefined => {
       try {

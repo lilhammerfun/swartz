@@ -6,15 +6,15 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
-/** Keep the reader mounted while opening, closing or resizing the conversation. */
-export function ReaderSplit({
+/** Keep the main content mounted while opening, closing or resizing the textbook. */
+export function WorkspaceSplit({
   children,
   panel,
-  onPanelWidthChange,
+  onSupportResize,
 }: {
   children: ReactNode;
   panel: ReactNode;
-  onPanelWidthChange: (width: number) => void;
+  onSupportResize: (width: number) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const [narrow, setNarrow] = useState(false);
@@ -34,8 +34,8 @@ export function ReaderSplit({
     // Panel registration updates its constraints during layout effects. Apply one
     // group layout after registration so a breakpoint cannot reuse the old minimums.
     const frame = requestAnimationFrame(() => {
-      const conversation = !open ? 0 : narrow ? 100 : savedWidth.current;
-      groupRef.current?.setLayout({ reader: 100 - conversation, conversation });
+      const support = !open ? 0 : narrow ? 100 : savedWidth.current;
+      groupRef.current?.setLayout({ main: 100 - support, support });
     });
     return () => cancelAnimationFrame(frame);
   }, [open, narrow]);
@@ -43,51 +43,43 @@ export function ReaderSplit({
   return (
     <div
       ref={container}
-      className="reader-split-container"
-      data-conversation-open={open}
+      className="workspace-split"
+      data-support-open={open}
       data-narrow={narrow}
     >
       <ResizablePanelGroup
         groupRef={groupRef}
         orientation="horizontal"
-        className="reader-resizable"
+        className="workspace-resizable"
         onLayoutChanged={(layout, meta) => {
-          if (
-            meta.isUserInteraction &&
-            open &&
-            !narrow &&
-            layout.conversation > 0
-          )
-            savedWidth.current = (meta.requestedLayout ?? layout).conversation;
+          if (meta.isUserInteraction && open && !narrow && layout.support > 0)
+            savedWidth.current = (meta.requestedLayout ?? layout).support;
         }}
       >
         <ResizablePanel
-          id="reader"
+          id="main"
           defaultSize="100%"
           minSize={narrow ? "0%" : "320px"}
-          className="reader-content-panel"
+          className="main-content-panel"
           inert={narrow && open ? true : undefined}
         >
           {children}
         </ResizablePanel>
         <ResizableHandle
-          aria-label="Resize conversation"
+          aria-label="Resize textbook"
           disabled={!open || narrow}
-          className="session-resize-handle"
+          className="support-resize-handle"
           style={{ display: open && !narrow ? undefined : "none" }}
         />
         <ResizablePanel
-          id="conversation"
+          id="support"
           defaultSize="0%"
           minSize={narrow ? "0%" : "320px"}
           maxSize={narrow ? "100%" : "65%"}
           collapsible={!open || narrow}
           collapsedSize="0%"
-          className="conversation-content-panel"
-          onResize={(size) => {
-            if (open && !narrow && size.inPixels > 0)
-              onPanelWidthChange(size.inPixels + 1);
-          }}
+          className="support-content-panel"
+          onResize={(size) => onSupportResize(size.inPixels)}
         >
           {panel}
         </ResizablePanel>

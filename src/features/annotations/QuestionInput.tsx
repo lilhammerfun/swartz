@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { useId, useRef, useState, type Ref } from "react";
 import {
   ArrowUp,
@@ -251,6 +250,11 @@ export function QuestionInput({
                       ? "DeepSeek"
                       : "Model"}
                   </DropdownMenuLabel>
+                  {!configured && (
+                    <p className="px-1.5 py-2 text-sm text-muted-foreground">
+                      Connect a model to continue.
+                    </p>
+                  )}
                   <DropdownMenuRadioGroup
                     value={model?.id ?? ""}
                     onValueChange={(id) =>
@@ -264,7 +268,11 @@ export function QuestionInput({
                     ))}
                   </DropdownMenuRadioGroup>
                   {choices.models.length > 0 && <DropdownMenuSeparator />}
-                  <DropdownMenuItem onSelect={onSettings}>
+                  <DropdownMenuItem
+                    onSelect={
+                      !configured ? (onConfigure ?? onSettings) : onSettings
+                    }
+                  >
                     <Settings2 />
                     Model settings
                   </DropdownMenuItem>
@@ -333,14 +341,6 @@ export function QuestionInput({
           {pending ? "Thinking…" : reading ? "Reading attachments…" : ""}
         </span>
       </form>
-      {!configured && onConfigure && (
-        <div className="composer-availability">
-          <span>Connect a model to continue.</span>
-          <Button variant="ghost" size="sm" onClick={onConfigure}>
-            Open settings
-          </Button>
-        </div>
-      )}
       {fileError ? (
         <FieldError role="alert">{fileError}</FieldError>
       ) : error ? (

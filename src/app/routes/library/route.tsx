@@ -29,12 +29,8 @@ export default function LibraryRoute({ loaderData }: Route.ComponentProps) {
       projects={loaderData.projects}
       sections={loaderData.sections}
       saving={library.saving || revalidator.state !== "idle"}
-      key={
-        sectionId ??
-        (params.get("view") === "recent" ? "all-recent" : "overview")
-      }
+      key={sectionId ?? "all"}
       sectionId={sectionId}
-      showAll={params.get("view") === "recent"}
       onChange={async (change) => {
         await library.onChange(change);
         await revalidator.revalidate();

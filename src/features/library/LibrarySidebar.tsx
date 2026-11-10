@@ -1,200 +1,205 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Link, useSearchParams } from "react-router";
 import {
-  ChevronRight,
-  FolderOpen,
-  LayoutDashboard,
+  BookOpen,
+  Library,
+  MoreHorizontal,
+  Plus,
+  Search,
 } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/IconButton";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuGroup,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import type { Project } from "@/features/projects/project-data";
-import type { LearningBook, ReaderLocation } from "@/types/book";
+import type { LibrarySection, Project } from "@/features/projects/project-data";
+import type { SectionAction } from "./LibrarySectionDialog";
 
 export function LibrarySidebar({
-  book,
-  location,
-  onNavigate,
-  showContents = true,
+  sections,
   projects,
-  gettingStarted,
+  saving,
+  onSectionAction,
+  onSelectProjects,
+  onSearch,
+  active,
 }: {
-  book?: LearningBook;
-  location: ReaderLocation;
-  onNavigate: (location: ReaderLocation) => void;
-  showContents?: boolean;
+  sections: readonly LibrarySection[];
   projects: readonly Project[];
-  gettingStarted?: ReactNode;
+  saving: boolean;
+  onSectionAction: (action: SectionAction) => void;
+  onSelectProjects: (sectionId: string | null) => void;
+  onSearch: () => void;
+  active: boolean;
 }) {
-  const [expanded, setExpanded] = useState<string[]>([]);
+  const [params] = useSearchParams();
   const { isMobile, setOpenMobile } = useSidebar();
-  const projectTitle =
-    projects.find((project) => project.id === book?.id)?.title ?? book?.title;
-  const activeChapterId =
-    location.scale === "section" ? location.chapterId : undefined;
-  useEffect(() => {
-    if (activeChapterId)
-      setExpanded((ids) =>
-        ids.includes(activeChapterId) ? ids : [...ids, activeChapterId],
-      );
-  }, [book?.id, activeChapterId]);
-  const navigate = (next: ReaderLocation) => {
-    onNavigate(next);
+  const close = () => {
     if (isMobile) setOpenMobile(false);
   };
+  const sectionId = active ? params.get("section") : null;
+  function navigationItem(section?: LibrarySection) {
+    const name = section?.name ?? "All books";
+    return (
+      <SidebarMenuItem
+        key={section?.id ?? "all"}
+        className="navigation-control library-navigation-row"
+      >
+        <SidebarMenuButton
+          asChild
+          className="sidebar-nav-button"
+          isActive={active && sectionId === (section?.id ?? null)}
+        >
+          <Link
+            to={
+              section
+                ? `/library?section=${encodeURIComponent(section.id)}`
+                : "/library"
+            }
+            onClick={close}
+          >
+            {section ? <BookOpen /> : <Library />}
+            <span>{name}</span>
+          </Link>
+        </SidebarMenuButton>
+        <div className="library-navigation-actions">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton
+                label={`Options: ${name}`}
+                size="icon-xs"
+                disabled={saving}
+              >
+                <MoreHorizontal />
+              </IconButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="right">
+              <DropdownMenuGroup>
+                {!section && (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      close();
+                      onSectionAction({ kind: "create" });
+                    }}
+                  >
+                    New category
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  disabled={
+                    !projects.some(
+                      (project) =>
+                        !section || project.librarySectionId === section.id,
+                    )
+                  }
+                  onSelect={() => {
+                    close();
+                    onSelectProjects(section?.id ?? null);
+                  }}
+                >
+                  Select projects
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              {section && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        close();
+                        onSectionAction({ kind: "rename", section });
+                      }}
+                    >
+                      Rename category
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => {
+                        close();
+                        onSectionAction({ kind: "delete", section });
+                      }}
+                    >
+                      Delete category
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <IconButton asChild label="New project" size="icon-xs">
+            <Link to="/" onClick={close}>
+              <Plus />
+            </Link>
+          </IconButton>
+        </div>
+      </SidebarMenuItem>
+    );
+  }
   return (
     <Sidebar
       collapsible="offcanvas"
       className="book-sidebar"
       aria-label="Library navigation"
     >
-      <SidebarHeader className="secondary-navigation-header">
-        <span
-          className="truncate"
-          title={showContents && book ? projectTitle : undefined}
+      <SidebarHeader className="secondary-navigation-header library-sidebar-header">
+        <span>Library</span>
+        <IconButton
+          label="Search library"
+          aria-haspopup="dialog"
+          aria-keyshortcuts="Control+K Meta+K"
+          onClick={() => {
+            close();
+            onSearch();
+          }}
         >
-          {showContents && book
-            ? projectTitle
-            : location.scale === "settings"
-              ? "Settings"
-              : "Workspace"}
-        </span>
+          <Search />
+        </IconButton>
       </SidebarHeader>
       <SidebarContent className="sidebar-navigation">
-        {!showContents && (
-          <>
-            <SidebarGroup className="p-0" aria-label="Projects">
-              <SidebarGroupLabel className="sidebar-section-label">
-                Projects
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {projects.map((project) => (
-                  <SidebarMenuItem key={project.id}>
-                    <SidebarMenuButton
-                      className="sidebar-nav-button"
-                      onClick={() =>
-                        navigate({ scale: "project", projectId: project.id })
-                      }
-                    >
-                      <FolderOpen />
-                      <span>{project.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-              {!projects.length && (
-                <p className="sidebar-empty">Your projects will appear here.</p>
-              )}
-            </SidebarGroup>
-          </>
-        )}
-        {showContents && book && (
-          <SidebarGroup className="p-0" aria-label="Current project">
+        <SidebarGroup className="p-0">
+          <SidebarMenu>{navigationItem()}</SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup className="p-0" aria-label="Book categories">
+          <div className="flex items-center justify-between">
             <SidebarGroupLabel className="sidebar-section-label">
-              Project
+              Categories
             </SidebarGroupLabel>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  className="sidebar-nav-button"
-                  isActive={location.scale === "project"}
-                  onClick={() =>
-                    navigate({ scale: "project", projectId: book.id })
-                  }
-                >
-                  <LayoutDashboard className="text-muted-foreground" />
-                  <span>Overview</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
-        {showContents && book && book.chapters.length > 0 && (
-          <SidebarGroup className="p-0" aria-label="Table of contents">
-            <SidebarGroupLabel className="sidebar-section-label">
-              Textbook
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-1">
-                {book.chapters.map((chapter) => (
-                  <Collapsible
-                    key={chapter.id}
-                    open={expanded.includes(chapter.id)}
-                    onOpenChange={(open) =>
-                      setExpanded((ids) =>
-                        open
-                          ? [...ids, chapter.id]
-                          : ids.filter((id) => id !== chapter.id),
-                      )
-                    }
-                    asChild
-                  >
-                    <SidebarMenuItem className="group/chapter">
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton className="sidebar-nav-button sidebar-chapter-button">
-                          <ChevronRight className="mt-0.5 size-3.5 transition-transform duration-150 group-data-[state=open]/chapter:rotate-90" />
-                          <span>{chapter.title}</span>
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub className="mr-0 ml-[19px] gap-0.5 border-l px-1.5 py-1">
-                          {chapter.sections.map((section) => {
-                            const active =
-                              location.scale === "section" &&
-                              location.sectionId === section.id;
-                            return (
-                              <SidebarMenuSubItem key={section.id}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={active}
-                                  className="sidebar-nav-button sidebar-section-button"
-                                >
-                                  <button
-                                    type="button"
-                                    aria-current={active ? "page" : undefined}
-                                    onClick={() =>
-                                      navigate({
-                                        scale: "section",
-                                        bookId: book.id,
-                                        chapterId: chapter.id,
-                                        sectionId: section.id,
-                                      })
-                                    }
-                                  >
-                                    <span>{section.title}</span>
-                                  </button>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            );
-                          })}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+            <IconButton
+              label="New category"
+              size="icon-xs"
+              disabled={saving}
+              onClick={() => {
+                close();
+                onSectionAction({ kind: "create" });
+              }}
+            >
+              <Plus />
+            </IconButton>
+          </div>
+          <SidebarMenu>
+            {sections.map((section) => navigationItem(section))}
+          </SidebarMenu>
+          {!sections.length && (
+            <p className="sidebar-empty">
+              Add categories to organize your books.
+            </p>
+          )}
+        </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="sidebar-footer">{gettingStarted}</SidebarFooter>
     </Sidebar>
   );
 }

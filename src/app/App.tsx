@@ -39,16 +39,17 @@ import {
   type SectionAction,
 } from "@/features/library/LibrarySectionDialog";
 import { LibrarySidebar } from "@/features/library/LibrarySidebar";
+import { SettingsSidebar } from "@/features/settings/SettingsSidebar";
 import { GettingStarted } from "@/features/home/GettingStarted";
 import { useProjects } from "@/features/projects/useProjects";
 import {
   projectBook,
   type ProjectDetail,
 } from "@/features/projects/project-data";
-import { ReaderSplit } from "@/features/reader/ReaderSplit";
-import { SessionPanel } from "@/features/chat/SessionPanel";
+import { WorkspaceSplit } from "./WorkspaceSplit";
+import { TextbookPanel } from "@/features/reader/TextbookPanel";
+import { EmptyBook } from "@/features/reader/EmptyBook";
 import { ConversationSidebar } from "@/features/chat/ConversationSidebar";
-import { useSessionPanel } from "@/features/chat/useSessionPanel";
 import { sessionPassages } from "@/features/chat/session-passages";
 import type { ChatSession } from "@/features/chat/chat-store";
 import { useChat } from "@/features/chat/useChat";
@@ -91,6 +92,12 @@ const ChatPage = lazy(() =>
   })),
 );
 
+const ReadingDocument = lazy(() =>
+  import("@/features/reader/ReadingDocument").then((module) => ({
+    default: module.ReadingDocument,
+  })),
+);
+
 function loadRecent() {
   try {
     return { entries: loadRecentLearning(localStorage), error: "" };
@@ -104,12 +111,12 @@ function loadRecent() {
 }
 
 export default function App() {
+  const topbar = useRef<HTMLElement>(null);
   const nativeMac = isTauri() && /Mac/.test(navigator.platform);
   const [sectionAction, setSectionAction] = useState<SectionAction | null>(
     null,
   );
   const [selectingProjects, setSelectingProjects] = useState(false);
-  const [revealGettingStarted, setRevealGettingStarted] = useState(false);
   const revalidator = useRevalidator();
   const routerLocation = useLocation();
   const routerNavigate = useNavigate();
@@ -183,10 +190,11 @@ export default function App() {
   };
   const chat = useChat();
   const [recent, setRecent] = useState(loadRecent);
-  const [sessionPanelWidth, setSessionPanelWidth] = useState<number>();
-  const [sessionToolbar, setSessionToolbar] = useState<HTMLDivElement | null>(
-    null,
+  const [textbookPanels, setTextbookPanels] = useState<Record<string, boolean>>(
+    {},
   );
+  const scrollPositions = useRef(new Map<string, number>());
+  const activeProjectSessions = useRef<Record<string, string>>({});
   const [modelSettings, setModelSettings] =
     useState<ModelSettings>(defaultModelSettings);
   const [modelLoadError, setModelLoadError] = useState("");
@@ -250,14 +258,19 @@ export default function App() {
     null,
   );
   const noticeSequence = useRef(0);
-  const currentBookLocation =
-    location.scale === "section" || location.scale === "book"
-      ? location
-      : readingLocation.current;
   const routeChatSession =
     location.scale === "chat"
       ? chat.getSession(location.conversationId)
       : undefined;
+  const currentBookLocation: ReaderLocation =
+    location.scale === "section" || location.scale === "book"
+      ? location
+      : routeChatSession?.bookId
+        ? (readingLocations.current[routeChatSession.bookId] ?? {
+            scale: "book",
+            bookId: routeChatSession.bookId,
+          })
+        : readingLocation.current;
   const book = library.books.find(
     (item) =>
       item.id ===
@@ -271,18 +284,30 @@ export default function App() {
   );
   const chapter =
     book?.chapters.find(
-      (c) => location.scale === "section" && c.id === location.chapterId,
-    ) ?? book?.chapters[0];
+      (c) =>
+        currentBookLocation.scale === "section" &&
+        c.id === currentBookLocation.chapterId,
+    ) ?? book?.chapters.find((chapter) => chapter.sections.length > 0);
   const section =
     chapter?.sections.find(
-      (s) => location.scale === "section" && s.id === location.sectionId,
+      (s) =>
+        currentBookLocation.scale === "section" &&
+        s.id === currentBookLocation.sectionId,
     ) ?? chapter?.sections[0];
   const inBook = location.scale === "section" || location.scale === "book";
-  const panel = useSessionPanel(book?.id);
+  const setTextbookOpen = (open: boolean) => {
+    if (book) setTextbookPanels((current) => ({ ...current, [book.id]: open }));
+  };
   const inProject = location.scale === "project";
-  const panelVisible = (inBook || inProject) && !!book && panel.open;
+  const panelVisible =
+    !!book &&
+    (inBook || (location.scale === "chat" && textbookPanels[book.id] === true));
   const projectChat = book
-    ? projectConversation(chat.sessions, book.id, panel.active)
+    ? projectConversation(
+        chat.sessions,
+        book.id,
+        routeChatSession?.id ?? activeProjectSessions.current[book.id],
+      )
     : undefined;
   const chatSession =
     location.scale === "chat"
@@ -290,9 +315,13 @@ export default function App() {
       : inBook || inProject
         ? projectChat?.current
         : undefined;
+  useEffect(() => {
+    if (routeChatSession?.bookId)
+      activeProjectSessions.current[routeChatSession.bookId] =
+        routeChatSession.id;
+  }, [routeChatSession?.id, routeChatSession?.bookId]);
   const inConversations =
-    location.scale === "home" ||
-    (location.scale === "chat" && !chatSession?.bookId);
+    location.scale === "home" || location.scale === "chat" || inBook;
   const notes = sessionPassages(chat.sessions);
   const [messageFocus, setMessageFocus] = useState<{
     id: string;
@@ -302,7 +331,7 @@ export default function App() {
   useEffect(() => {
     const readingChanged = recordedLocation.current !== location;
     recordedLocation.current = location;
-    // Hiding the overlay is not a new reading visit. Keep its conversation resumable.
+    // Toggling the textbook is not a new learning visit.
     if (!readingChanged && !chatSession?.messages.length) return;
     if (
       location.scale !== "book" &&
@@ -420,8 +449,11 @@ export default function App() {
       );
   };
   const ensureProjectChat = (target: LearningBook) =>
-    projectConversation(chat.sessions, target.id, panel.active).current?.id ??
-    chat.startSession(target);
+    projectConversation(
+      chat.sessions,
+      target.id,
+      activeProjectSessions.current[target.id],
+    ).current?.id ?? chat.startSession(target);
   const startProject = (detail: ProjectDetail) => {
     const target = integrations.project(projectBook(detail.project, detail));
     const sessionId = ensureProjectChat(target);
@@ -429,19 +461,14 @@ export default function App() {
       throw new Error(
         "Could not open this conversation. Check local storage and try again.",
       );
-    navigateToBook(target);
-    panel.openSession(sessionId, target.id);
+    navigate({ scale: "chat", conversationId: sessionId });
     const current = chat.getSession(sessionId);
     if (configured && !current?.request) void chat.startLearning(sessionId, {});
   };
   const openSavedConversation = (id: string, messageId?: string) => {
     const session = chat.getSession(id);
     if (!session) return;
-    const target = library.books.find((item) => item.id === session.bookId);
-    if (target) {
-      openBook(target);
-      panel.openSession(ensureProjectChat(target) ?? id, target.id);
-    } else navigate({ scale: "chat", conversationId: id });
+    navigate({ scale: "chat", conversationId: id });
     if (messageId)
       setMessageFocus((current) => ({
         id: messageId,
@@ -465,7 +492,6 @@ export default function App() {
       onSessionReady: (conversationId) => {
         // Navigate when the question is safely saved, never when a late answer arrives.
         if (
-          !chatSession?.bookId &&
           locationRef.current === origin &&
           (origin.scale !== "chat" || origin.conversationId !== conversationId)
         )
@@ -491,17 +517,26 @@ export default function App() {
     chat.setDraftPassage(sessionId, anchor);
     return true;
   };
-  const openPanelSession = (id: string) => {
+  const closeTextbook = () => {
+    setTextbookOpen(false);
+    if (inBook) {
+      if (chatSession)
+        navigate({ scale: "chat", conversationId: chatSession.id });
+      else if (book) navigate({ scale: "project", projectId: book.id });
+    }
+  };
+  const openConversation = (id: string) => {
     setActiveAnnotation(null);
     setMessageFocus(undefined);
-    panel.openSession(id);
+    navigate({ scale: "chat", conversationId: id });
   };
   const compose = (anchor: AnnotationAnchor) => {
     if (!book) return;
     const id = ensureProjectChat(book);
     if (!id) return;
     if (attachPassage(id, anchor)) {
-      panel.openSession(id);
+      setTextbookOpen(true);
+      navigate({ scale: "chat", conversationId: id });
       setMessageFocus(undefined);
     }
   };
@@ -510,7 +545,11 @@ export default function App() {
       session.messages.some((message) => message.id === annotation.id),
     );
     if (!session) return;
-    panel.openSession(projectChat?.current?.id ?? session.id);
+    setTextbookOpen(true);
+    navigate({
+      scale: "chat",
+      conversationId: session.id,
+    });
     setActiveAnnotation(annotation.id);
     setMessageFocus((current) => ({
       id: annotation.id,
@@ -546,15 +585,11 @@ export default function App() {
   const renderConversation = (session: ChatSession) => (
     <Suspense fallback={<RouteLoading conversation />}>
       <ChatPage
-        key={session.bookId ?? session.id}
+        key={session.id}
         compact={panelVisible}
-        messages={
-          session.bookId
-            ? projectConversation(chat.sessions, session.bookId).messages
-            : session.messages
-        }
-        sessionId={session.bookId ?? session.id}
-        scrollPositions={panel.scrollPositions}
+        messages={session.messages}
+        sessionId={session.id}
+        scrollPositions={scrollPositions.current}
         draftPassage={session.draftPassage}
         onRemovePassage={() => chat.setDraftPassage(session.id)}
         focusMessageId={messageFocus?.id}
@@ -573,10 +608,7 @@ export default function App() {
             });
           setActiveAnnotation(id);
           setAnnotationFocusRequest((request) => request + 1);
-          const workspaceWidth =
-            sessionToolbar?.closest(".reader-workspace")?.clientWidth ??
-            window.innerWidth;
-          if (workspaceWidth <= 720) panel.setOpen(false);
+          setTextbookOpen(true);
         }}
         value={session.draft}
         onChange={(text) => chat.setDraft(session.id, text)}
@@ -591,17 +623,6 @@ export default function App() {
         onSettings={() => navigate({ scale: "settings" })}
         onConfigure={() => navigate({ scale: "settings" })}
         onSend={sendOrdinaryQuestion}
-        onStartLearning={
-          session.bookId
-            ? () => {
-                if (!configured) {
-                  navigate({ scale: "settings" });
-                  return;
-                }
-                void chat.startLearning(session.id, {});
-              }
-            : undefined
-        }
         onCancel={() => {
           void chat.cancel();
         }}
@@ -626,6 +647,11 @@ export default function App() {
       />
     </Suspense>
   );
+  const currentConversation = chatSession ? (
+    renderConversation(chatSession)
+  ) : (
+    <RouteLoading />
+  );
   const routeContext: AppRouteContext = {
     home: {
       value: chat.homeDraft,
@@ -648,8 +674,6 @@ export default function App() {
       recent: recent.entries,
       selecting: selectingProjects,
       onSelectingChange: setSelectingProjects,
-      onSectionAction: setSectionAction,
-      onSearch: openSearch,
       onOpen: (project) =>
         navigate({ scale: "project", projectId: project.id }),
     },
@@ -661,17 +685,15 @@ export default function App() {
       loadError: modelLoadError,
       onSave: saveModel,
     },
-    conversation: chatSession ? (
-      renderConversation(chatSession)
-    ) : (
-      <RouteLoading />
-    ),
+    conversation: currentConversation,
     book,
     reader:
       book &&
-      location.scale === "section" &&
-      chapter?.id === location.chapterId &&
-      section?.id === location.sectionId
+      chapter &&
+      section &&
+      (location.scale !== "section" ||
+        (chapter.id === location.chapterId &&
+          section.id === location.sectionId))
         ? {
             book,
             chapter,
@@ -700,14 +722,6 @@ export default function App() {
     <SidebarProvider
       className={`desktop-app${nativeMac ? " desktop-app--macos" : ""}`}
       mobileBreakpoint={panelVisible ? 1180 : 768}
-      style={
-        {
-          "--sidebar-width": "240px",
-          "--session-panel-width": sessionPanelWidth
-            ? `${sessionPanelWidth}px`
-            : undefined,
-        } as React.CSSProperties
-      }
     >
       {sectionAction && (
         <LibrarySectionDialog
@@ -724,7 +738,7 @@ export default function App() {
           }}
         />
       )}
-      <header className="app-topbar" data-tauri-drag-region>
+      <header ref={topbar} className="app-topbar" data-tauri-drag-region>
         <div className="app-topbar-conversation" data-tauri-drag-region>
           <div className="app-topbar-leading" data-tauri-drag-region>
             <div className="app-topbar-history" aria-label="Navigation history">
@@ -787,35 +801,16 @@ export default function App() {
             )}
           </div>
         </div>
-        <div
-          className={`app-topbar-actions ${panelVisible ? "session-toolbar" : ""}`}
-          data-tauri-drag-region
-        >
-          {panelVisible && (
-            <div
-              ref={setSessionToolbar}
-              className="flex h-full min-w-0 flex-1"
-            />
-          )}
-          {location.scale === "chat" && chatSession?.bookId && book && (
-            <IconButton label="Read textbook" onClick={() => openBook(book)}>
-              <BookOpen />
-            </IconButton>
-          )}
-          {(inBook || inProject) && book && (
+        <div className="app-topbar-actions" data-tauri-drag-region>
+          {(inBook || (location.scale === "chat" && book)) && (
             <IconButton
-              label={panelVisible ? "Close conversation" : "Open conversation"}
+              label={panelVisible ? "Close textbook" : "Open textbook"}
               aria-pressed={panelVisible}
-              aria-controls="session-panel"
+              aria-controls="textbook-panel"
               variant={panelVisible ? "secondary" : "ghost"}
               onClick={() => {
-                if (panel.open) {
-                  panel.setOpen(false);
-                  setActiveAnnotation(null);
-                } else if (book) {
-                  const id = ensureProjectChat(book);
-                  if (id) panel.openSession(id);
-                }
+                if (panelVisible) closeTextbook();
+                else setTextbookOpen(true);
               }}
             >
               <PanelRight />
@@ -826,55 +821,61 @@ export default function App() {
       <PrimaryRail
         location={location}
         onNavigate={navigate}
-        onSearch={openSearch}
-        onGettingStarted={() => {
-          setRevealGettingStarted(true);
-          if (inConversations) navigate({ scale: "library" });
-        }}
+        gettingStarted={
+          <GettingStarted
+            configured={configured}
+            projects={projects.projects}
+            details={projects.details}
+            loading={projects.loading}
+            loadDetail={projects.loadDetail}
+            onNavigate={navigate}
+          />
+        }
       />
       <div className="workspace-island">
-        {inConversations ? (
+        {location.scale === "settings" ? (
+          <SettingsSidebar />
+        ) : inConversations ? (
           <ConversationSidebar
+            projects={projects.projects}
             sessions={chat.sessions}
-            location={location}
+            location={
+              inBook && chatSession
+                ? { scale: "chat", conversationId: chatSession.id }
+                : location
+            }
             pendingSessionId={chat.pendingSessionId}
             onNavigate={navigate}
+            onNewProjectChat={(project) => {
+              const id = chat.startSession(project, true);
+              if (id) openConversation(id);
+            }}
           />
         ) : (
           <LibrarySidebar
+            sections={projects.sections}
             projects={projects.projects}
-            gettingStarted={
-              <GettingStarted
-                configured={configured}
-                projects={projects.projects}
-                details={projects.details}
-                loading={projects.loading}
-                loadDetail={projects.loadDetail}
-                onNavigate={navigate}
-                reveal={revealGettingStarted}
-                onRevealHandled={() => setRevealGettingStarted(false)}
-              />
-            }
-            book={book}
-            location={location}
-            onNavigate={navigate}
-            showContents={
-              inBook ||
-              inProject ||
-              (location.scale === "chat" && !!chatSession?.bookId)
-            }
+            saving={projects.saving}
+            onSearch={openSearch}
+            active={location.scale === "library"}
+            onSectionAction={setSectionAction}
+            onSelectProjects={(sectionId) => {
+              if (
+                location.scale !== "library" ||
+                new URLSearchParams(routerLocation.search).get("section") !==
+                  sectionId
+              ) {
+                void routerNavigate(
+                  sectionId
+                    ? `/library?section=${encodeURIComponent(sectionId)}`
+                    : "/library",
+                );
+              }
+              setSelectingProjects(true);
+            }}
           />
         )}
-        <SidebarInset
-          className="reader-workspace"
-          style={
-            {
-              "--session-panel-width": sessionPanelWidth
-                ? `${sessionPanelWidth}px`
-                : undefined,
-            } as React.CSSProperties
-          }
-        >
+        <SidebarInset className="reader-workspace">
           {projects.error && (
             <RuntimeErrorNotice
               title="Could not load projects"
@@ -888,23 +889,50 @@ export default function App() {
               {projects.error}
             </RuntimeErrorNotice>
           )}
-          <ReaderSplit
-            onPanelWidthChange={setSessionPanelWidth}
+          <WorkspaceSplit
+            onSupportResize={(width) =>
+              topbar.current?.style.setProperty(
+                "--support-panel-width",
+                `${width}px`,
+              )
+            }
             panel={
-              panelVisible ? (
-                <SessionPanel
-                  toolbar={sessionToolbar}
-                  session={projectChat?.current}
-                  drafts={projectChat?.drafts ?? []}
-                  unanswered={projectChat?.unanswered ?? []}
-                  renderSession={renderConversation}
-                  onSelect={openPanelSession}
-                />
+              panelVisible && book ? (
+                <TextbookPanel>
+                  <Suspense fallback={<RouteLoading />}>
+                    {inBook ? (
+                      <Outlet context={routeContext} />
+                    ) : routeContext.reader ? (
+                      <ReadingDocument {...routeContext.reader} />
+                    ) : (
+                      <EmptyBook book={book} />
+                    )}
+                  </Suspense>
+                </TextbookPanel>
               ) : null
             }
           >
-            <Outlet context={routeContext} />
-          </ReaderSplit>
+            {inBook ? (
+              chatSession && currentConversation
+            ) : (
+              <Outlet context={routeContext} />
+            )}
+            {inBook && !chatSession && book && (
+              <EmptyState title="Learn through conversation">
+                Ask a question about this project. Your textbook stays alongside
+                the conversation.
+                <Button
+                  className="mt-4"
+                  onClick={() => {
+                    const id = ensureProjectChat(book);
+                    if (id) navigate({ scale: "chat", conversationId: id });
+                  }}
+                >
+                  Start conversation
+                </Button>
+              </EmptyState>
+            )}
+          </WorkspaceSplit>
         </SidebarInset>
       </div>
 

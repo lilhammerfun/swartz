@@ -1,50 +1,14 @@
 import { useEffect, useState } from "react";
+import { CheckCircle2, Circle } from "@/components/ui/icons";
 import {
-  CheckCircle2,
-  ChevronDown,
-  Circle,
-  MoreHorizontal,
-} from "@/components/ui/icons";
-import { Button } from "@/components/ui/button";
-import { useSidebar } from "@/components/ui/sidebar";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Item, ItemContent, ItemGroup } from "@/components/ui/item";
 import type { Project, ProjectDetail } from "@/features/projects/project-data";
 import type { ReaderLocation } from "@/types/book";
 
-const preferenceKey = "swartz.getting-started.v1";
-type Preferences = { open?: boolean; hidden?: boolean };
-function loadPreferences(): Preferences {
-  try {
-    const value = JSON.parse(localStorage.getItem(preferenceKey) ?? "{}");
-    return {
-      open: typeof value.open === "boolean" ? value.open : undefined,
-      hidden: value.hidden === true,
-    };
-  } catch {
-    return {};
-  }
-}
-
-/** Completion comes from business data; only expansion and dismissal preferences belong to this card. */
+/** Completion is derived from saved learning data, checked when the helper menu opens. */
 export function GettingStarted({
   configured,
   projects,
@@ -52,8 +16,6 @@ export function GettingStarted({
   loading,
   loadDetail,
   onNavigate,
-  reveal = false,
-  onRevealHandled,
 }: {
   configured: boolean;
   projects: Project[];
@@ -61,26 +23,11 @@ export function GettingStarted({
   loading: boolean;
   loadDetail: (id: string) => Promise<ProjectDetail>;
   onNavigate: (location: ReaderLocation) => void;
-  reveal?: boolean;
-  onRevealHandled?: () => void;
 }) {
-  const [preferences, setPreferences] = useState(loadPreferences);
   const [scanned, setScanned] = useState<ProjectDetail[]>([]);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const { isMobile, setOpenMobile } = useSidebar();
-  useEffect(() => {
-    if (!reveal) return;
-    const next = { hidden: false, open: true };
-    setPreferences(next);
-    try {
-      localStorage.setItem(preferenceKey, JSON.stringify(next));
-    } catch {
-      /* Keep onboarding visible if saving preferences fails. */
-    }
-    onRevealHandled?.();
-  }, [reveal, onRevealHandled]);
   const chapterExists = (detail: ProjectDetail) =>
     detail.textbook?.chapters.some((chapter) =>
       chapter.sections.some((section) =>
@@ -162,118 +109,40 @@ export function GettingStarted({
     },
   ];
   const completed = steps.filter((step) => step.done).length;
-  const allDone = completed === steps.length;
-  const updatePreferences = (next: Preferences) => {
-    setPreferences(next);
-    try {
-      localStorage.setItem(preferenceKey, JSON.stringify(next));
-    } catch {
-      /* Folding and dismissal still work for this session if preferences cannot be saved. */
-    }
-  };
-  if (loading || !ready) return null;
-  if (preferences.hidden) return null;
   return (
-    <Collapsible
-      open={preferences.open ?? !allDone}
-      onOpenChange={(open) => updatePreferences({ ...preferences, open })}
-      asChild
-    >
-      <Card
-        size="sm"
-        aria-label="Getting started"
-        className="onboarding-checklist"
-      >
-        <CardHeader>
-          <CardTitle className="min-w-0">
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-auto min-h-7 w-full min-w-0 justify-start gap-2 px-1 text-left"
-              >
-                <span className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left">
-                  <span>Getting started</span>
-                  <span className="text-xs font-normal text-muted-foreground">
-                    {completed}/{steps.length}
-                  </span>
-                </span>
-                <ChevronDown
-                  data-icon="inline-end"
-                  className="ml-auto transition-transform in-data-[state=closed]:-rotate-90"
-                />
-              </Button>
-            </CollapsibleTrigger>
-          </CardTitle>
-          <CardAction>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label="Getting started options"
-                >
-                  <MoreHorizontal />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" side="top">
-                <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    onSelect={() =>
-                      updatePreferences({ ...preferences, hidden: true })
-                    }
-                  >
-                    Hide checklist
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </CardAction>
-        </CardHeader>
-        <CollapsibleContent>
-          <CardContent className="px-1">
-            <ItemGroup className="gap-0">
-              {steps.map((step) => (
-                <Item key={step.id} size="xs" asChild>
-                  <Button
-                    variant="ghost"
-                    className="h-auto justify-start whitespace-normal text-left font-normal"
-                    onClick={() => {
-                      onNavigate(step.destination);
-                      if (isMobile) setOpenMobile(false);
-                    }}
-                    aria-label={`${step.label}${step.done ? ": Completed" : ""}`}
-                  >
-                    {step.done ? (
-                      <CheckCircle2 className="text-muted-foreground" />
-                    ) : (
-                      <Circle className="text-muted-foreground" />
-                    )}
-                    <ItemContent className="min-w-0">
-                      <span
-                        className={
-                          step.done ? "text-muted-foreground line-through" : ""
-                        }
-                      >
-                        {step.label}
-                      </span>
-                    </ItemContent>
-                  </Button>
-                </Item>
-              ))}
-            </ItemGroup>
-            {failed && (
-              <Button
-                variant="link"
-                size="sm"
-                onClick={() => setAttempt((value) => value + 1)}
-              >
-                Retry progress check
-              </Button>
-            )}
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+    <>
+      <DropdownMenuLabel>
+        Getting started · {completed}/{steps.length}
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      {steps.map((step) => (
+        <DropdownMenuItem
+          key={step.id}
+          onSelect={() => onNavigate(step.destination)}
+        >
+          {step.done ? (
+            <CheckCircle2 className="text-muted-foreground" />
+          ) : (
+            <Circle className="text-muted-foreground" />
+          )}
+          <span className={step.done ? "text-muted-foreground" : undefined}>
+            {step.label}
+          </span>
+        </DropdownMenuItem>
+      ))}
+      {(loading || !ready) && (
+        <DropdownMenuLabel>Checking progress…</DropdownMenuLabel>
+      )}
+      {failed && (
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault();
+            setAttempt((value) => value + 1);
+          }}
+        >
+          Retry progress check
+        </DropdownMenuItem>
+      )}
+    </>
   );
 }

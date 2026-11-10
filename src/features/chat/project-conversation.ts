@@ -1,6 +1,6 @@
 import type { ChatSession } from "./chat-store.ts";
 
-/** A continuous project view over legacy records. Original IDs, drafts and requests stay intact. */
+/** Inspect project records without rewriting their IDs, drafts or requests. */
 export function projectConversation(
   sessions: readonly ChatSession[],
   projectId: string,
@@ -39,7 +39,7 @@ export function projectConversation(
   };
 }
 
-/** Give the Tutor the same project history the reader sees, with the current input last. */
+/** Model runs currently share project history across sessions, with the current input last. */
 export function projectRunSession(
   sessions: readonly ChatSession[],
   session: ChatSession,

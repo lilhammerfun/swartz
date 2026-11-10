@@ -11,8 +11,8 @@ export function EmptyBook({ book }: { book: LearningBook }) {
           <h1>{book.title}</h1>
         </header>
         <EmptyState compact icon={null}>
-          No chapters yet. Open the project conversation to explore a question.
-          Your textbook can grow from what you choose to develop.
+          No chapters yet. Explore a question in the conversation. Your textbook
+          can grow from what you choose to develop.
         </EmptyState>
       </article>
     </ScrollArea>

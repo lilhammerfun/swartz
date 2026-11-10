@@ -23,7 +23,6 @@ export interface ChatPageProps extends HomeComposerProps {
   compact?: boolean;
   messages: ChatViewMessage[];
   onRetry?: () => void;
-  onStartLearning?: () => void;
   sessionId?: string;
   scrollPositions?: Map<string, number>;
   draftPassage?: AnnotationAnchor;
@@ -36,7 +35,6 @@ export interface ChatPageProps extends HomeComposerProps {
 export function ChatPage({
   messages,
   onRetry,
-  onStartLearning,
   compact = false,
   sessionId,
   scrollPositions,
@@ -47,6 +45,7 @@ export function ChatPage({
   focusRequest,
   ...composer
 }: ChatPageProps) {
+  const empty = messages.length === 0 && !composer.pending;
   const viewport = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -60,7 +59,7 @@ export function ChatPage({
     return () => {
       scrollPositions?.set(sessionId, element.scrollTop);
     };
-  }, [sessionId, scrollPositions]);
+  }, [sessionId, scrollPositions, empty]);
   useEffect(() => {
     if (draftPassage && !focusMessageId) input.current?.focus();
   }, [draftPassage, focusMessageId]);
@@ -77,6 +76,7 @@ export function ChatPage({
     return () => cancelAnimationFrame(frame);
   }, [focusMessageId, focusRequest]);
   useEffect(() => {
+    if (empty) return;
     const follow = () => {
       const element = viewport.current;
       if (element && atBottom.current) element.scrollTop = element.scrollHeight;
@@ -85,11 +85,12 @@ export function ChatPage({
     const observer = new ResizeObserver(follow);
     if (content.current) observer.observe(content.current);
     return () => observer.disconnect();
-  }, [messages, composer.pending]);
+  }, [messages, composer.pending, empty]);
   return (
     <section
       className="conversation-view"
       data-compact={compact}
+      data-empty={empty}
       aria-label="Learning conversation"
     >
       <ScrollArea
@@ -106,26 +107,11 @@ export function ChatPage({
         }}
       >
         <div ref={content} className="conversation-content">
-          {!messages.length && !composer.pending && (
-            <div className="conversation-empty">
-              <h2>
-                {onStartLearning ? "Where shall we begin?" : "Keep exploring."}
-              </h2>
-              <p>
-                {onStartLearning
-                  ? "Ask a question, bring a passage, or let your Tutor suggest a starting point."
-                  : "Your questions and ideas belong here."}
-              </p>
-              {onStartLearning && (
-                <Button
-                  variant="outline"
-                  onClick={onStartLearning}
-                  disabled={composer.busy || !!onRetry}
-                >
-                  Start learning
-                </Button>
-              )}
-            </div>
+          {empty && (
+            <header className="conversation-empty">
+              <h2>Where shall we begin?</h2>
+              <p>Ask a question or bring a passage you'd like to explore.</p>
+            </header>
           )}
           <MessageGroup className="gap-8">
             {messages.map((message) => (

@@ -366,7 +366,7 @@ export function startBookSession(
     const now = new Date().toISOString();
     session = {
       id: `chat-${crypto.randomUUID()}`,
-      title: book.title,
+      title: createNew ? "New chat" : book.title,
       bookId: book.id,
       createdAt: now,
       updatedAt: now,

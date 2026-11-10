@@ -4,16 +4,9 @@ import {
   PageToolbar,
   SelectedCount,
 } from "@/components/ui/page-layout";
-import { useState } from "react";
-import {
-  FolderOpen,
-  ChevronDown,
-  ChevronRight,
-  MoreHorizontal,
-  Plus,
-} from "@/components/ui/icons";
+import { Fragment, useEffect, useState } from "react";
+import { Check, ChevronDown } from "@/components/ui/icons";
 import { Button } from "@/components/ui/button";
-import { SearchTrigger } from "@/components/ui/search-input";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -28,11 +21,20 @@ import type {
 } from "@/features/projects/project-data";
 import { orderRecentProjects } from "@/features/projects/project-data";
 import { projectError } from "@/features/projects/useProjects";
-import { Link } from "react-router";
-import { IconButton } from "@/components/ui/IconButton";
-import type { SectionAction } from "./LibrarySectionDialog";
-import { EntityCard } from "@/components/ui/entity-card";
+import { useSearchParams } from "react-router";
+import { BookCover } from "./BookCover";
 import { EmptyState, RuntimeErrorNotice } from "@/components/ui/feedback";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const booksPerPage = 24;
 
 export function LibraryPage({
   projects,
@@ -44,9 +46,6 @@ export function LibraryPage({
   onSelectingChange,
   sectionId = null,
   recent,
-  showAll = false,
-  onSectionAction,
-  onSearch,
 }: {
   projects: readonly Project[];
   sections: readonly LibrarySection[];
@@ -56,19 +55,57 @@ export function LibraryPage({
   selecting: boolean;
   onSelectingChange: (value: boolean) => void;
   sectionId?: string | null;
-  showAll?: boolean;
-  onSectionAction: (action: SectionAction) => void;
-  onSearch: () => void;
   recent: readonly { bookId?: string; updatedAt: string }[];
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const [params, setParams] = useSearchParams();
   const section = sections.find((item) => item.id === sectionId);
-  // Recent is a system view of all projects; do not filter it by an empty section assignment.
+  // An unfiltered Library includes uncategorized projects, ordered by recent learning.
   const visible = section
     ? projects.filter((item) => item.librarySectionId === section.id)
     : orderRecentProjects(projects, recent);
   const ids = selected.filter((id) => visible.some((item) => item.id === id));
+  const pageCount = Math.max(1, Math.ceil(visible.length / booksPerPage));
+  const rawPage = params.get("page");
+  const requestedPage = Number(rawPage ?? 1);
+  const page =
+    Number.isSafeInteger(requestedPage) && requestedPage > 0
+      ? Math.min(requestedPage, pageCount)
+      : 1;
+  const offset = (page - 1) * booksPerPage;
+  const start = Math.max(1, Math.min(page - 1, pageCount - 2));
+  const pages =
+    pageCount <= 7
+      ? Array.from({ length: pageCount }, (_, index) => index + 1)
+      : [...new Set([1, start, start + 1, start + 2, pageCount])].sort(
+          (a, b) => a - b,
+        );
+  const pageItems = visible.slice(offset, offset + booksPerPage);
+  const pageSelected =
+    pageItems.length > 0 && pageItems.every((item) => ids.includes(item.id));
+  // Normalize invalid links and return to the last available page after projects are moved.
+  useEffect(() => {
+    const canonical = page === 1 ? null : String(page);
+    if (rawPage === canonical) return;
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (canonical) next.set("page", canonical);
+        else next.delete("page");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [rawPage, page, setParams]);
+
+  const pageUrl = (page: number) => {
+    const next = new URLSearchParams(params);
+    if (page === 1) next.delete("page");
+    else next.set("page", String(page));
+    const search = next.toString();
+    return search ? `/library?${search}` : "/library";
+  };
   async function move(sectionId: string | null) {
     setError("");
     try {
@@ -79,25 +116,18 @@ export function LibraryPage({
       setError(projectError(cause));
     }
   }
-  function shelf(items: readonly Project[], preview = false) {
+  function shelf(items: readonly Project[]) {
     return (
-      <div
-        className={
-          preview
-            ? "library-bookshelf library-bookshelf-preview"
-            : "library-bookshelf"
-        }
-      >
+      <div className="library-bookshelf">
         {items.map((project) => {
           const checked = ids.includes(project.id);
           return (
-            <EntityCard
+            <button
               key={project.id}
-              title={project.title}
-              description={project.description}
-              icon={<FolderOpen />}
+              type="button"
+              className="library-book"
               aria-label={`${selecting ? "Select" : "Open project:"} ${project.title}`}
-              selected={selecting ? checked : undefined}
+              aria-pressed={selecting ? checked : undefined}
               disabled={saving}
               onClick={() => {
                 if (!selecting) return onOpen(project);
@@ -107,53 +137,57 @@ export function LibraryPage({
                     : [...current, project.id],
                 );
               }}
-            />
+            >
+              <BookCover id={project.id} title={project.title} />
+              {selecting && (
+                <span
+                  className="library-selection-check"
+                  data-checked={checked}
+                  aria-hidden="true"
+                >
+                  {checked && <Check size={14} />}
+                </span>
+              )}
+            </button>
           );
         })}
       </div>
     );
   }
-  const fullView = !!section || showAll || selecting;
-  const shelves = fullView
-    ? [
-        {
-          id: section?.id ?? null,
-          name: section?.name ?? "Recent",
-          items: visible,
-        },
-      ]
-    : [
-        { id: null, name: "Recent", items: visible },
-        ...sections.map((item) => ({
-          ...item,
-          items: projects.filter(
-            (project) => project.librarySectionId === item.id,
-          ),
-        })),
-      ];
   return (
     <PageLayout label="Library" className="library-page">
       <PageHeading
-        title="Library"
-        description="Your projects, organized in one place."
+        title={section?.name ?? "All books"}
+        description={
+          section
+            ? "Learning projects and textbooks in this category."
+            : "Your learning projects and the textbooks you build along the way."
+        }
       />
-      <PageToolbar>
-        {selecting ? (
+      {selecting && (
+        <PageToolbar>
           <div className="library-selection-tools">
             <SelectedCount count={ids.length} />
             <Button
               size="sm"
               variant="ghost"
-              disabled={saving || !visible.length}
+              disabled={saving || !pageItems.length}
               onClick={() =>
                 setSelected(
-                  ids.length === visible.length
-                    ? []
-                    : visible.map((item) => item.id),
+                  pageSelected
+                    ? ids.filter(
+                        (id) => !pageItems.some((item) => item.id === id),
+                      )
+                    : [
+                        ...new Set([
+                          ...ids,
+                          ...pageItems.map((item) => item.id),
+                        ]),
+                      ],
                 )
               }
             >
-              {ids.length === visible.length ? "Deselect all" : "Select all"}
+              {pageSelected ? "Deselect page" : "Select page"}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -162,7 +196,7 @@ export function LibraryPage({
                   variant="outline"
                   disabled={saving || !ids.length || !sections.length}
                 >
-                  Move to section
+                  Move to category
                   <ChevronDown />
                 </Button>
               </DropdownMenuTrigger>
@@ -186,7 +220,7 @@ export function LibraryPage({
                 disabled={saving || !ids.length}
                 onClick={() => void move(null)}
               >
-                Remove from section
+                Remove from category
               </Button>
             )}
             <Button
@@ -202,42 +236,8 @@ export function LibraryPage({
               Done
             </Button>
           </div>
-        ) : (
-          <div className="library-page-tools">
-            <SearchTrigger label="Search library" onClick={onSearch} />
-            <div className="flex shrink-0 items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <IconButton label="Library options" disabled={saving}>
-                    <MoreHorizontal />
-                  </IconButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      onSelect={() => onSectionAction({ kind: "create" })}
-                    >
-                      New section
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={!projects.length}
-                      onSelect={() => onSelectingChange(true)}
-                    >
-                      Select projects
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button asChild variant="outline">
-                <Link to="/">
-                  <Plus data-icon="inline-start" />
-                  New project
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
-      </PageToolbar>
+        </PageToolbar>
+      )}
       {error && (
         <RuntimeErrorNotice
           title="Could not update the library"
@@ -246,85 +246,82 @@ export function LibraryPage({
           {error}
         </RuntimeErrorNotice>
       )}
-      {shelves.map((group) => (
-        <section
-          key={group.id ?? "recent"}
-          className="library-shelf"
-          aria-label={group.name}
-        >
-          <header className="library-shelf-header">
-            <h2>{group.name}</h2>
-            <div className="flex items-center gap-1">
-              {!fullView && (
-                <IconButton
-                  asChild
-                  label={`View all: ${group.name}`}
-                  variant="link"
-                  className="rounded-full text-muted-foreground hover:text-foreground"
-                >
-                  <Link
-                    to={
-                      group.id
-                        ? `/library?section=${encodeURIComponent(group.id)}`
-                        : "/library?view=recent"
+      <section
+        className="library-shelf"
+        aria-label={section?.name ?? "All books"}
+      >
+        {visible.length ? (
+          shelf(pageItems)
+        ) : (
+          <EmptyState>
+            {section
+              ? "No books in this category. Move a project here from All books."
+              : "No books yet. Start a learning project from Home."}
+          </EmptyState>
+        )}
+      </section>
+      {visible.length > 0 && (
+        <footer>
+          <Pagination aria-label="Library pages">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  to={pageUrl(Math.max(1, page - 1))}
+                  aria-disabled={page === 1}
+                  tabIndex={page === 1 ? -1 : undefined}
+                  className={
+                    page === 1 ? "pointer-events-none opacity-40" : undefined
+                  }
+                  onClick={
+                    page === 1 ? (event) => event.preventDefault() : undefined
+                  }
+                />
+              </PaginationItem>
+              {pages.map((number, index) => (
+                <Fragment key={number}>
+                  {index > 0 && number - pages[index - 1] > 1 && (
+                    <PaginationItem className="library-pagination-ellipsis">
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  <PaginationItem
+                    className={
+                      number !== page && pageCount > 3
+                        ? "library-pagination-secondary-page"
+                        : undefined
                     }
                   >
-                    <ChevronRight />
-                  </Link>
-                </IconButton>
-              )}
-              {group.id && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <IconButton
-                      label={`Section options: ${group.name}`}
-                      variant="link"
-                      className="rounded-full text-muted-foreground hover:text-foreground"
-                      disabled={saving}
+                    <PaginationLink
+                      to={pageUrl(number)}
+                      isActive={number === page}
+                      aria-label={`Page ${number}`}
                     >
-                      <MoreHorizontal />
-                    </IconButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem
-                        onSelect={() =>
-                          onSectionAction({
-                            kind: "rename",
-                            section: { id: group.id!, name: group.name },
-                          })
-                        }
-                      >
-                        Rename section
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() =>
-                          onSectionAction({
-                            kind: "delete",
-                            section: { id: group.id!, name: group.name },
-                          })
-                        }
-                      >
-                        Delete section
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </header>
-          {group.items.length ? (
-            shelf(group.items, !fullView)
-          ) : (
-            <EmptyState compact={!!group.id}>
-              {group.id
-                ? "No projects in this section."
-                : "No projects yet. Start an exploration from Home."}
-            </EmptyState>
-          )}
-        </section>
-      ))}
+                      {number}
+                    </PaginationLink>
+                  </PaginationItem>
+                </Fragment>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  to={pageUrl(Math.min(pageCount, page + 1))}
+                  aria-disabled={page === pageCount}
+                  tabIndex={page === pageCount ? -1 : undefined}
+                  className={
+                    page === pageCount
+                      ? "pointer-events-none opacity-40"
+                      : undefined
+                  }
+                  onClick={
+                    page === pageCount
+                      ? (event) => event.preventDefault()
+                      : undefined
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </footer>
+      )}
     </PageLayout>
   );
 }

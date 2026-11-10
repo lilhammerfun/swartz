@@ -1,15 +1,16 @@
+import type { ReactNode } from "react";
 import {
   Home,
   HomeFilled,
   BookFilled,
-  Library,
+  BookOpen,
   ListChecks,
-  Search,
   Settings,
   UserRound,
 } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/IconButton";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,25 +19,24 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import { useSidebar } from "@/components/ui/sidebar";
 import type { ReaderLocation } from "@/types/book";
 
 export function PrimaryRail({
   location,
   onNavigate,
-  onSearch,
-  onGettingStarted,
+  gettingStarted,
 }: {
   location: ReaderLocation;
   onNavigate: (location: ReaderLocation) => void;
-  onSearch: () => void;
-  onGettingStarted: () => void;
+  gettingStarted: ReactNode;
 }) {
-  const { isMobile, setOpenMobile, setOpen } = useSidebar();
-  const inLibrary = ["library", "project", "book", "section"].includes(
-    location.scale,
-  );
+  const inLibrary = ["library", "project"].includes(location.scale);
+  const inChats = ["home", "chat", "book", "section"].includes(location.scale);
   return (
     <nav className="primary-rail" aria-label="Main navigation">
       <IconButton
@@ -44,27 +44,10 @@ export function PrimaryRail({
         variant="navigation"
         size="icon"
         className="primary-rail-item"
-        aria-current={
-          location.scale === "home" || (location.scale === "chat" && !inLibrary)
-            ? "page"
-            : undefined
-        }
+        aria-current={inChats ? "page" : undefined}
         onClick={() => onNavigate({ scale: "home" })}
       >
-        {location.scale === "home" || location.scale === "chat" ? (
-          <HomeFilled />
-        ) : (
-          <Home />
-        )}
-      </IconButton>
-      <IconButton
-        label="Search"
-        variant="navigation"
-        size="icon"
-        className="primary-rail-item"
-        onClick={onSearch}
-      >
-        <Search />
+        {inChats ? <HomeFilled /> : <Home />}
       </IconButton>
       <IconButton
         label="Library"
@@ -74,7 +57,7 @@ export function PrimaryRail({
         aria-current={inLibrary ? "page" : undefined}
         onClick={() => onNavigate({ scale: "library" })}
       >
-        {inLibrary ? <BookFilled /> : <Library />}
+        {inLibrary ? <BookFilled /> : <BookOpen />}
       </IconButton>
       <div className="primary-rail-footer">
         <DropdownMenu>
@@ -96,7 +79,22 @@ export function PrimaryRail({
             sideOffset={12}
             className="w-56"
           >
-            <DropdownMenuLabel>You · Personal workspace</DropdownMenuLabel>
+            {/* TODO: Populate this header with account profile data when available. */}
+            <DropdownMenuLabel className="flex items-center gap-3">
+              <Avatar size="lg" aria-hidden="true">
+                <AvatarFallback>
+                  <UserRound className="size-5" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate text-sm font-medium text-foreground">
+                  Local user
+                </span>
+                <span className="truncate text-xs text-muted-foreground">
+                  ID: —
+                </span>
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem
@@ -105,16 +103,17 @@ export function PrimaryRail({
                 <Settings />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  onGettingStarted();
-                  if (isMobile) setOpenMobile(true);
-                  else setOpen(true);
-                }}
-              >
-                <ListChecks />
-                Getting started
-              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <ListChecks />
+                  Getting started
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent align="end" className="w-64">
+                    {gettingStarted}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

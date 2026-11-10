@@ -50,15 +50,15 @@ export function LibrarySectionDialog({
       <DialogContent role={deleting ? "alertdialog" : "dialog"}>
         <DialogTitle>
           {deleting
-            ? "Delete section"
+            ? "Delete category"
             : action.kind === "rename"
-              ? "Rename section"
-              : "New section"}
+              ? "Rename category"
+              : "New category"}
         </DialogTitle>
         <DialogDescription>
           {deleting
-            ? `Delete “${action.section.name}”? Its projects will remain in Recent.`
-            : "Choose a name for this section."}
+            ? `Delete “${action.section.name}”? Its projects will remain in All books.`
+            : "Choose a name for this category."}
         </DialogDescription>
         <form
           className="flex flex-col gap-5"
@@ -92,7 +92,7 @@ export function LibrarySectionDialog({
             <Field data-invalid={!!error}>
               {!deleting && (
                 <>
-                  <FieldLabel htmlFor="section-name">Section name</FieldLabel>
+                  <FieldLabel htmlFor="section-name">Category name</FieldLabel>
                   <Input
                     id="section-name"
                     autoFocus
@@ -125,9 +125,9 @@ export function LibrarySectionDialog({
               disabled={saving || (!deleting && !name.trim())}
             >
               {deleting
-                ? "Delete section"
+                ? "Delete category"
                 : action.kind === "create"
-                  ? "Create section"
+                  ? "Create category"
                   : "Save"}
             </Button>
           </DialogFooter>

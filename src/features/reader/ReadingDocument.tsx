@@ -243,57 +243,59 @@ export function ReadingDocument({
             );
           })}
         </div>
-        <nav
-          className="chapter-end flex items-center justify-between gap-3"
-          aria-label="Reading navigation"
-        >
-          {index > 0 ? (
-            <Button
-              variant="ghost"
-              className="h-auto min-w-0 gap-3 py-2.5 text-left"
-              onClick={() =>
-                onNavigate(
-                  allSections[index - 1].chapterId,
-                  allSections[index - 1].section.id,
-                )
-              }
-            >
-              <ArrowLeft className="text-muted-foreground" />
-              <span className="min-w-0">
-                <span className="block text-micro font-normal text-muted-foreground">
-                  Previous
+        {index >= 0 && allSections.length > 1 && (
+          <nav
+            className="chapter-end flex items-center justify-between gap-3"
+            aria-label="Reading navigation"
+          >
+            {index > 0 ? (
+              <Button
+                variant="ghost"
+                className="h-auto min-w-0 gap-3 py-2.5 text-left"
+                onClick={() =>
+                  onNavigate(
+                    allSections[index - 1].chapterId,
+                    allSections[index - 1].section.id,
+                  )
+                }
+              >
+                <ArrowLeft className="text-muted-foreground" />
+                <span className="min-w-0">
+                  <span className="block text-micro font-normal text-muted-foreground">
+                    Previous
+                  </span>
+                  <span className="mt-1 block truncate text-xs font-normal">
+                    {allSections[index - 1].section.title}
+                  </span>
                 </span>
-                <span className="mt-1 block truncate text-xs font-normal">
-                  {allSections[index - 1].section.title}
+              </Button>
+            ) : (
+              <div />
+            )}
+            {index < allSections.length - 1 && (
+              <Button
+                variant="ghost"
+                className="h-auto min-w-0 gap-3 py-2.5 text-right"
+                onClick={() =>
+                  onNavigate(
+                    allSections[index + 1].chapterId,
+                    allSections[index + 1].section.id,
+                  )
+                }
+              >
+                <span className="min-w-0">
+                  <span className="block text-micro font-normal text-muted-foreground">
+                    Next
+                  </span>
+                  <span className="mt-1 block truncate text-xs font-normal">
+                    {allSections[index + 1].section.title}
+                  </span>
                 </span>
-              </span>
-            </Button>
-          ) : (
-            <div />
-          )}
-          {index < allSections.length - 1 && (
-            <Button
-              variant="ghost"
-              className="h-auto min-w-0 gap-3 py-2.5 text-right"
-              onClick={() =>
-                onNavigate(
-                  allSections[index + 1].chapterId,
-                  allSections[index + 1].section.id,
-                )
-              }
-            >
-              <span className="min-w-0">
-                <span className="block text-micro font-normal text-muted-foreground">
-                  Next
-                </span>
-                <span className="mt-1 block truncate text-xs font-normal">
-                  {allSections[index + 1].section.title}
-                </span>
-              </span>
-              <ArrowRight className="text-muted-foreground" />
-            </Button>
-          )}
-        </nav>
+                <ArrowRight className="text-muted-foreground" />
+              </Button>
+            )}
+          </nav>
+        )}
       </article>
       {selection &&
         createPortal(
