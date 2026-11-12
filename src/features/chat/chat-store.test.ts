@@ -29,12 +29,17 @@ import {
   parseChat,
 } from "./chat-store.ts";
 
-const [projectDetail] = JSON.parse(
+const {
+  projects: [projectDetail],
+} = JSON.parse(
   readFileSync(
-    new URL("../../mock-data/projects.json", import.meta.url),
+    new URL(
+      "../../../src-tauri/mock-data/backend-interview.json",
+      import.meta.url,
+    ),
     "utf8",
   ),
-) as ProjectDetail[];
+) as { projects: ProjectDetail[] };
 const learningBook = projectTextbook(projectDetail.project, projectDetail);
 
 const passage = {

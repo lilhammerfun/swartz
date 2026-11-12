@@ -8,12 +8,15 @@ import {
   type ProjectDetail,
 } from "./project-data.ts";
 
-const details = JSON.parse(
+const { projects: details } = JSON.parse(
   readFileSync(
-    new URL("../../mock-data/projects.json", import.meta.url),
+    new URL(
+      "../../../src-tauri/mock-data/backend-interview.json",
+      import.meta.url,
+    ),
     "utf8",
   ),
-) as ProjectDetail[];
+) as { projects: ProjectDetail[] };
 
 test("workspace identity stays with the project while textbook identity remains in the detail", () => {
   const detail = details[0];
@@ -27,7 +30,7 @@ test("workspace identity stays with the project while textbook identity remains 
 });
 
 test("a project without a textbook can open a stable workspace without fabricated chapters", () => {
-  const detail = details.find((item) => item.textbook === null)!;
+  const detail = { ...details[0], textbook: null };
   const fromList = projectBook(detail.project);
   const fromDetail = projectBook(detail.project, detail);
   assert.equal(fromList.id, fromDetail.id);
@@ -45,7 +48,10 @@ test("the activity feed displays newest facts first without changing the stored 
 });
 
 test("Recent keeps assigned and unvisited projects while ordering by latest use", () => {
-  const projects = details.map((item) => ({ ...item.project }));
+  const projects = Array.from({ length: 3 }, (_, index) => ({
+    ...details[0].project,
+    id: `project-${index}`,
+  }));
   projects[1].librarySectionId = "systems";
   const before = structuredClone(projects);
   const ordered = orderRecentProjects(projects, [
