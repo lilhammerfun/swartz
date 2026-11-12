@@ -2,15 +2,7 @@
 
 use keyring::{Entry, Error as KeyringError};
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ModelConfig {
-    pub(crate) base_url: String,
-    pub(crate) model: String,
-    pub(crate) api_key: String,
-}
+use crate::models::model::ModelConfig;
 
 const SERVICE: &str = "dev.swartz.desktop";
 const ACCOUNT: &str = "model-settings";
@@ -36,6 +28,7 @@ pub(crate) fn read_config() -> Result<Option<ModelConfig>, String> {
 pub(crate) fn write_config(config: &ModelConfig) -> Result<(), String> {
     let serialized =
         serde_json::to_string(config).map_err(|_| "Could not save model settings.".to_string())?;
+    // Example: {"apiFormat":"openai_responses","baseUrl":"https://api.deepseek.com","model":"deepseek-flash","apiKey":"sk-example"}
     keyring_entry()?.set_password(&serialized).map_err(|_| {
         "Could not save the API key. Unlock your system keyring and try again.".to_string()
     })

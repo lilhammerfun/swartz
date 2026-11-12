@@ -24,6 +24,7 @@ test("browser preview cannot load or save model credentials", async () => {
     await assert.rejects(loadModelSettings(), /desktop app/);
     await assert.rejects(
       saveModelSettings({
+        apiFormat: "openai_responses",
         baseUrl: "https://provider.example/v1",
         model: "test-model",
         apiKey: "test-key",
@@ -39,11 +40,13 @@ test("model settings are read and saved only through Rust commands", async () =>
   setup(true);
   try {
     const input = {
+      apiFormat: "openai_responses" as const,
       baseUrl: "https://provider.example/v1",
       model: "test-model",
       apiKey: "test-key",
     };
     const saved = {
+      apiFormat: input.apiFormat,
       baseUrl: input.baseUrl,
       model: input.model,
       hasApiKey: true,

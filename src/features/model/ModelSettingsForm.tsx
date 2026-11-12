@@ -26,7 +26,6 @@ export function ModelSettingsForm({
   const [model, setModel] = useState(settings.model);
   const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     setBaseUrl(settings.baseUrl);
@@ -45,19 +44,16 @@ export function ModelSettingsForm({
     <form
       aria-label="Model settings"
       onChange={() => {
-        setSaved(false);
         setError("");
       }}
       onSubmit={(event) => {
         event.preventDefault();
         if (saving || !backendAvailable) return;
         setSaving(true);
-        setSaved(false);
         setError("");
-        void onSave({ baseUrl, model, apiKey })
+        void onSave({ apiFormat: settings.apiFormat, baseUrl, model, apiKey })
           .then(() => {
             setApiKey("");
-            setSaved(true);
           })
           .catch((reason) =>
             setError(reason instanceof Error ? reason.message : String(reason)),
@@ -68,9 +64,21 @@ export function ModelSettingsForm({
     >
       <div className="setting-group">
         <SettingRow
+          label="API format"
+          htmlFor="model-api-format"
+          description="The request and response format used by this connection."
+        >
+          <Input
+            id="model-api-format"
+            value="OpenAI Responses"
+            readOnly
+            aria-describedby="model-api-format-description"
+          />
+        </SettingRow>
+        <SettingRow
           label="API base URL"
           htmlFor="model-base-url"
-          description="Requires support for the Responses API."
+          description="Use your provider's Responses API base URL."
         >
           <Input
             id="model-base-url"
@@ -118,7 +126,7 @@ export function ModelSettingsForm({
             disabled={saving || !backendAvailable}
             required={!keepingKey && !isLocalBase(baseUrl)}
             placeholder={
-              keepingKey ? "Leave blank to keep the saved key" : "API key"
+              keepingKey ? "Leave blank to keep the saved key" : "e.g. sk-..."
             }
             aria-describedby="model-api-key-description"
             autoComplete="off"
@@ -138,9 +146,6 @@ export function ModelSettingsForm({
         </RuntimeErrorNotice>
       )}
       <div className="flex items-center justify-end gap-3">
-        <span role="status" className="text-xs text-muted-foreground">
-          {saved ? "Saved" : ""}
-        </span>
         <Button
           variant="outline"
           type="submit"

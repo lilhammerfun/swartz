@@ -1,9 +1,13 @@
+export type ApiFormat = "openai_responses";
+
 export interface ModelConfig {
+  apiFormat: ApiFormat;
   baseUrl: string;
   model: string;
   apiKey: string;
 }
 export interface ModelSettings {
+  apiFormat: ApiFormat;
   baseUrl: string;
   model: string;
   hasApiKey: boolean;
@@ -14,6 +18,7 @@ export interface ModelRequestOptions {
   reasoningEffort?: ReasoningEffort;
 }
 export const defaultModelSettings: ModelSettings = {
+  apiFormat: "openai_responses",
   baseUrl: "",
   model: "",
   hasApiKey: false,

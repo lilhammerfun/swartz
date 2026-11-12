@@ -227,6 +227,7 @@ export default function App() {
     const value = await saveModelSettings(input);
     setModelSettings(value);
     setModelLoadError("");
+    showNotice("Model settings saved");
   };
   const readingLocation = useRef<ReaderLocation>(
     Object.values(latestReadingLocations(recent.entries))[0] ?? {

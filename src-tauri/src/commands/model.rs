@@ -1,16 +1,20 @@
 //! Tauri adapters for loading and saving model settings.
 
-use crate::services::model::{self, ModelInput, ModelSettings};
+use std::sync::Arc;
+
+use crate::services::model::{ModelInput, ModelService, ModelSettings};
 
 #[tauri::command]
-pub(crate) async fn load_model_settings(app: tauri::AppHandle) -> Result<ModelSettings, String> {
-    model::load_model_settings(app).await
+pub(crate) async fn load_model_settings(
+    service: tauri::State<'_, Arc<ModelService>>,
+) -> Result<ModelSettings, String> {
+    service.settings().await
 }
 
 #[tauri::command]
 pub(crate) async fn save_model_settings(
-    app: tauri::AppHandle,
+    service: tauri::State<'_, Arc<ModelService>>,
     input: ModelInput,
 ) -> Result<ModelSettings, String> {
-    model::save_model_settings(app, input).await
+    service.save(input).await
 }

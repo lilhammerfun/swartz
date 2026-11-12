@@ -1,15 +1,13 @@
 //! Coordinate model settings and reusable connections.
 
-mod connection;
-
-pub(crate) use connection::{ModelConnection, ModelRequestOptions};
-use connection::{is_local, normalize_base};
+use crate::{
+    clients::model::{ModelConnection, is_local, normalize_base},
+    models::model::{ApiFormat, ModelConfig},
+    storage::credentials::{read_config, write_config},
+};
 
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use tauri::Manager;
-
-use crate::storage::credentials::{ModelConfig, read_config, write_config};
 
 #[derive(Default)]
 enum ConfigCache {
@@ -35,11 +33,11 @@ impl ConfigCache {
 }
 
 #[derive(Default)]
-pub struct ModelState {
+pub struct ModelService {
     config: Mutex<ConfigCache>,
 }
 
-impl ModelState {
+impl ModelService {
     fn load_with(
         &self,
         read: impl FnOnce() -> Result<Option<ModelConfig>, String>,
@@ -76,6 +74,7 @@ impl ModelState {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelSettings {
+    api_format: ApiFormat,
     base_url: String,
     model: String,
     has_api_key: bool,
@@ -84,6 +83,7 @@ pub struct ModelSettings {
 impl From<&ModelConfig> for ModelSettings {
     fn from(config: &ModelConfig) -> Self {
         Self {
+            api_format: config.api_format,
             base_url: config.base_url.clone(),
             model: config.model.clone(),
             has_api_key: !config.api_key.is_empty(),
@@ -94,16 +94,46 @@ impl From<&ModelConfig> for ModelSettings {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelInput {
+    api_format: ApiFormat,
     base_url: String,
     model: String,
     api_key: String,
 }
 
-pub(crate) async fn load_connection(app: tauri::AppHandle) -> Result<Arc<ModelConnection>, String> {
-    tauri::async_runtime::spawn_blocking(move || app.state::<ModelState>().load_with(read_config))
+impl ModelService {
+    pub(crate) async fn connection(self: &Arc<Self>) -> Result<Arc<ModelConnection>, String> {
+        let service = self.clone();
+        tokio::task::spawn_blocking(move || service.load_with(read_config))
+            .await
+            .map_err(|_| "Could not load model settings.".to_string())??
+            .ok_or_else(|| "Configure a model in Settings first.".to_string())
+    }
+
+    pub(crate) async fn settings(self: &Arc<Self>) -> Result<ModelSettings, String> {
+        let service = self.clone();
+        tokio::task::spawn_blocking(move || {
+            service.load_with(read_config).map(|connection| {
+                connection
+                    .as_ref()
+                    .map(|connection| ModelSettings::from(&connection.config))
+                    .unwrap_or(ModelSettings {
+                        api_format: ApiFormat::default(),
+                        base_url: String::new(),
+                        model: String::new(),
+                        has_api_key: false,
+                    })
+            })
+        })
         .await
-        .map_err(|_| "Could not load model settings.".to_string())??
-        .ok_or_else(|| "Configure a model in Settings first.".to_string())
+        .map_err(|_| "Could not load model settings.".to_string())?
+    }
+
+    pub(crate) async fn save(self: &Arc<Self>, input: ModelInput) -> Result<ModelSettings, String> {
+        let service = self.clone();
+        tokio::task::spawn_blocking(move || service.save_with(input, read_config, write_config))
+            .await
+            .map_err(|_| "Could not save model settings.".to_string())?
+    }
 }
 
 fn prepare_config(input: ModelInput, previous: Option<ModelConfig>) -> Result<ModelConfig, String> {
@@ -114,7 +144,8 @@ fn prepare_config(input: ModelInput, previous: Option<ModelConfig>) -> Result<Mo
     }
     let mut api_key = input.api_key.trim().to_string();
     if api_key.is_empty()
-        && let Some(previous) = previous.filter(|old| old.base_url == base_url)
+        && let Some(previous) =
+            previous.filter(|old| old.api_format == input.api_format && old.base_url == base_url)
     {
         api_key = previous.api_key;
     }
@@ -125,41 +156,20 @@ fn prepare_config(input: ModelInput, previous: Option<ModelConfig>) -> Result<Mo
         return Err("Enter a valid API key.".into());
     }
     Ok(ModelConfig {
+        api_format: input.api_format,
         base_url,
         model,
         api_key,
     })
 }
 
-pub(crate) async fn load_model_settings(app: tauri::AppHandle) -> Result<ModelSettings, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        app.state::<ModelState>()
-            .load_with(read_config)
-            .map(|config| {
-                config
-                    .as_ref()
-                    .map(|connection| ModelSettings::from(&connection.config))
-                    .unwrap_or(ModelSettings {
-                        base_url: String::new(),
-                        model: String::new(),
-                        has_api_key: false,
-                    })
-            })
-    })
-    .await
-    .map_err(|_| "Could not load model settings.".to_string())?
-}
-
-pub(crate) async fn save_model_settings(
-    app: tauri::AppHandle,
-    input: ModelInput,
-) -> Result<ModelSettings, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        app.state::<ModelState>()
-            .save_with(input, read_config, write_config)
-    })
-    .await
-    .map_err(|_| "Could not save model settings.".to_string())?
+#[cfg(test)]
+impl ModelService {
+    pub(crate) fn for_test(connection: Arc<ModelConnection>) -> Self {
+        Self {
+            config: Mutex::new(ConfigCache::Loaded(Some(connection))),
+        }
+    }
 }
 
 #[cfg(test)]

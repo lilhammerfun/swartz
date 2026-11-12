@@ -1,3 +1,5 @@
+//! Learning projects, their materials, and library organization.
+
 use serde::{Deserialize, Serialize};
 
 /// IDs are opaque strings; project and node IDs must not be derived from titles.
@@ -21,14 +23,6 @@ pub struct Project {
 pub struct LibrarySection {
     pub id: String,
     pub name: String,
-}
-
-/// Sections and project assignments share one file, so deleting a section cannot leave dangling references.
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub(super) struct LibraryData {
-    pub sections: Vec<LibrarySection>,
-    pub projects: Vec<ProjectDetail>,
 }
 
 #[derive(Debug, Serialize)]

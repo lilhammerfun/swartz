@@ -1,4 +1,3 @@
-use super::types::TutorInput;
 use super::*;
 use serde_json::{Value, json};
 use std::{
@@ -7,6 +6,15 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+
+fn service() -> TutorService {
+    TutorService::new(
+        Arc::new(ModelService::default()),
+        Arc::new(ProjectStore::new(
+            std::env::temp_dir().join("swartz-unused-projects.json"),
+        )),
+    )
+}
 
 fn request() -> TutorRequest {
     let samples: Value = serde_json::from_str(include_str!(concat!(
@@ -93,37 +101,39 @@ async fn agent_is_reused_while_history_and_model_overrides_stay_with_the_run() {
         (200, response("First answer.")),
         (200, response("Second answer.")),
     ]);
-    let service = TutorService::default();
+    let service = TutorService::new(
+        Arc::new(ModelService::for_test(connection.clone())),
+        // A directory is not a valid library file: Home must not try reading it.
+        Arc::new(ProjectStore::new(std::env::temp_dir())),
+    );
     let original_agent = service.agent(connection.clone()).unwrap();
     let mut first = request();
     first.options =
         serde_json::from_value(json!({"model": "alternate-model", "reasoningEffort": "low"}))
             .unwrap();
     first.history = serde_json::from_value(json!([{"id": "earlier-question", "role": "user", "text": "Only the first run knows this.", "createdAt": "2026-11-05T00:00:00Z"}])).unwrap();
-    let lease = service.register("main", &first).unwrap();
+    let result = service
+        .run("main", first, |id| {
+            assert_eq!(id, "attempt-home-1");
+            Ok(())
+        })
+        .await
+        .unwrap();
     assert_eq!(
-        service
-            .respond(connection.clone(), &first, None, lease.run.clone())
-            .await
-            .unwrap(),
+        serde_json::to_value(result).unwrap()["outcome"]["text"],
         "First answer."
     );
-    drop(lease);
+    assert!(!service.cancel("main", "attempt-home-1").unwrap());
     let second = request();
-    let lease = service.register("main", &second).unwrap();
+    let result = service.run("main", second, |_| Ok(())).await.unwrap();
     assert_eq!(
-        service
-            .respond(connection.clone(), &second, None, lease.run.clone())
-            .await
-            .unwrap(),
+        serde_json::to_value(result).unwrap()["outcome"]["text"],
         "Second answer."
     );
-    drop(lease);
     assert!(Arc::ptr_eq(
         &original_agent,
         &service.agent(connection).unwrap()
     ));
-    assert!(service.runs.lock().unwrap().is_empty());
     let payloads = server.join().unwrap();
     assert_eq!(payloads[0]["model"], "alternate-model");
     assert_eq!(payloads[0]["reasoning"]["effort"], "low");
@@ -160,26 +170,27 @@ async fn agent_is_reused_while_history_and_model_overrides_stay_with_the_run() {
 
 #[tokio::test]
 async fn cancellation_is_scoped_survives_early_signal_and_cleans_the_registration() {
-    let service = TutorService::default();
+    let runs = ActiveRuns::default();
     let request = request();
-    let lease = service.register("main", &request).unwrap();
-    assert!(service.register("other", &request).is_err());
-    assert!(!service.cancel("other", &request.request_id).unwrap());
-    assert!(service.cancel("main", &request.request_id).unwrap());
+    let mut lease = runs
+        .register("main", &request.request_id, &request.target)
+        .unwrap();
+    assert!(
+        runs.register("other", &request.request_id, &request.target)
+            .is_err()
+    );
+    assert!(!runs.cancel("other", &request.request_id).unwrap());
+    assert!(runs.cancel("main", &request.request_id).unwrap());
     let outcome = lease.resolve(std::future::pending()).await;
     assert!(matches!(
         lease.finish(outcome).unwrap(),
         TutorOutcome::Cancelled
     ));
-    assert!(service.runs.lock().unwrap().is_empty());
-    assert!(!service.cancel("main", &request.request_id).unwrap());
-    let lease = service.register("main", &request).unwrap();
-    let context = ToolContext::default().with_scope(lease.run.clone());
-    assert!(Arc::ptr_eq(
-        &lease.run,
-        &context.for_dispatch().scope::<RunState>().unwrap()
-    ));
-    service.cancel_owner("main");
+    assert!(!runs.cancel("main", &request.request_id).unwrap());
+    let lease = runs
+        .register("main", &request.request_id, &request.target)
+        .unwrap();
+    runs.cancel_owner("main");
     assert!(matches!(
         lease
             .finish(TutorOutcome::Completed {
@@ -188,9 +199,17 @@ async fn cancellation_is_scoped_survives_early_signal_and_cleans_the_registratio
             .unwrap(),
         TutorOutcome::Cancelled
     ));
-    assert!(service.runs.lock().unwrap().is_empty());
-    drop(service.register("main", &request).unwrap());
-    assert!(service.runs.lock().unwrap().is_empty());
+    drop(
+        runs.register("main", &request.request_id, &request.target)
+            .unwrap(),
+    );
+    assert!(!runs.cancel("main", &request.request_id).unwrap());
+    // Dropping the completed lease must not remove a later reservation with the same ID.
+    let replacement = runs
+        .register("main", &request.request_id, &request.target)
+        .unwrap();
+    assert!(runs.cancel("main", &request.request_id).unwrap());
+    drop(replacement);
 }
 
 #[tokio::test]
@@ -205,22 +224,72 @@ async fn provider_failures_and_incomplete_text_never_become_successful_answers()
         (200, incomplete),
         (200, response("")),
     ]);
-    let service = TutorService::default();
+    let service = TutorService::new(
+        Arc::new(ModelService::for_test(connection)),
+        Arc::new(ProjectStore::new(std::env::temp_dir())),
+    );
     for expected in [Some("API key"), None, None] {
         let request = request();
-        let lease = service.register("main", &request).unwrap();
-        let error = service
-            .respond(connection.clone(), &request, None, lease.run.clone())
-            .await
-            .unwrap_err();
+        let result = service.run("main", request, |_| Ok(())).await.unwrap();
+        let TutorOutcome::Failed { error } = result.outcome else {
+            panic!("A failed provider response must not become an answer.");
+        };
         if let Some(expected) = expected {
             assert!(error.contains(expected), "Expected {expected}: {error}");
         }
         assert!(!error.contains("Partial answer."));
         assert!(!error.contains("private-provider-detail"));
     }
-    assert!(service.runs.lock().unwrap().is_empty());
     server.join().unwrap();
+}
+
+#[tokio::test]
+async fn injected_project_store_is_reloaded_before_each_run() {
+    use std::{
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
+    struct ProjectFile(PathBuf);
+    impl Drop for ProjectFile {
+        fn drop(&mut self) {
+            let _ = fs::remove_file(&self.0);
+        }
+    }
+    let file = ProjectFile(std::env::temp_dir().join(format!(
+        "swartz-tutor-{}-{}.json", std::process::id(),
+        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos(),
+    )));
+    let (connection, server) = provider(vec![
+        (200, response("First project answer.")),
+        (200, response("Updated project answer.")),
+    ]);
+    let service = TutorService::new(
+        Arc::new(ModelService::for_test(connection)),
+        Arc::new(ProjectStore::new(file.0.clone())),
+    );
+    let mut data: Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/mock-data/backend-interview.json"
+    )))
+    .unwrap();
+    for goal in ["Understand ownership.", "Understand borrowing."] {
+        data["projects"][0]["goal"]["content"] = json!(goal);
+        fs::write(&file.0, data.to_string()).unwrap();
+        let mut input = request();
+        input.target = ConversationTarget::Project {
+            project_id: data["projects"][0]["project"]["id"]
+                .as_str()
+                .unwrap()
+                .into(),
+        };
+        let result = service.run("main", input, |_| Ok(())).await.unwrap();
+        assert!(matches!(result.outcome, TutorOutcome::Completed { .. }));
+    }
+    let payloads = server.join().unwrap();
+    assert!(payloads[0].to_string().contains("Understand ownership."));
+    assert!(payloads[1].to_string().contains("Understand borrowing."));
+    assert!(!payloads[1].to_string().contains("Understand ownership."));
 }
 
 #[test]
@@ -247,8 +316,7 @@ fn project_context_retains_goal_plan_and_the_original_quote_snapshot() {
         "/mock-data/backend-interview.json"
     )))
     .unwrap();
-    let project: projects::ProjectDetail =
-        serde_json::from_value(samples["projects"][0].clone()).unwrap();
+    let project: ProjectDetail = serde_json::from_value(samples["projects"][0].clone()).unwrap();
     request.target = ConversationTarget::Project {
         project_id: project.project.id.clone(),
     };
@@ -267,9 +335,180 @@ fn project_context_retains_goal_plan_and_the_original_quote_snapshot() {
     assert!(prompt.contains("Original quoted wording."));
     assert!(prompt.contains("The learner's source notes."));
     assert!(!history.contains("Original quoted wording."));
-    let event = serde_json::to_value(TutorEvent::Started {
-        request_id: "run-1".into(),
-    })
-    .unwrap();
-    assert_eq!(event, json!({"kind": "started", "requestId": "run-1"}));
+}
+
+#[tokio::test]
+async fn registration_notification_can_cancel_before_dependencies_are_accessed() {
+    let service = service();
+    let request_id = request().request_id;
+    let result = service
+        .run("main", request(), |id| {
+            assert_eq!(id, request_id);
+            assert!(!service.cancel("other", id)?);
+            assert!(service.cancel("main", id)?);
+            Ok(())
+        })
+        .await
+        .unwrap();
+    assert!(matches!(result.outcome, TutorOutcome::Cancelled));
+    assert!(!service.cancel("main", &request_id).unwrap());
+}
+
+#[tokio::test]
+async fn notification_failure_releases_the_target_and_validation_precedes_registration() {
+    let service = service();
+    let request_id = request().request_id;
+    let error = service
+        .run("main", request(), |_| Err("Receiver closed.".into()))
+        .await
+        .err()
+        .unwrap();
+    assert_eq!(error, "Receiver closed.");
+    assert!(!service.cancel("main", &request_id).unwrap());
+    let mut invalid = request();
+    invalid.request_id.clear();
+    assert!(
+        service
+            .run("main", invalid, |_| panic!(
+                "Invalid input must not be accepted."
+            ))
+            .await
+            .is_err()
+    );
+    // The same target can be accepted after either failure, without accessing real credentials.
+    let result = service
+        .run("main", request(), |id| {
+            assert!(service.cancel("main", id)?);
+            Ok(())
+        })
+        .await
+        .unwrap();
+    assert!(matches!(result.outcome, TutorOutcome::Cancelled));
+}
+
+#[tokio::test]
+async fn cancelling_a_running_future_drops_its_resources_and_releases_the_target() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    struct Resource(Arc<AtomicBool>);
+    impl Drop for Resource {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
+    }
+
+    let runs = ActiveRuns::default();
+    let request = request();
+    let mut lease = runs
+        .register("main", &request.request_id, &request.target)
+        .unwrap();
+    let dropped = Arc::new(AtomicBool::new(false));
+    let (started, ready) = tokio::sync::oneshot::channel();
+    let operation = async {
+        let _resource = Resource(dropped.clone());
+        started.send(()).unwrap();
+        std::future::pending::<Result<String, String>>().await
+    };
+    let cancel = async {
+        ready.await.unwrap();
+        assert!(runs.cancel("main", &request.request_id).unwrap());
+    };
+    let (outcome, ()) = tokio::join!(lease.resolve(operation), cancel);
+    assert!(dropped.load(Ordering::SeqCst));
+    assert!(matches!(
+        lease.finish(outcome).unwrap(),
+        TutorOutcome::Cancelled
+    ));
+    drop(
+        runs.register("main", &request.request_id, &request.target)
+            .unwrap(),
+    );
+}
+
+#[tokio::test]
+async fn dropping_an_unfinished_operation_releases_its_reservation() {
+    let runs = ActiveRuns::default();
+    let request = request();
+    let mut lease = runs
+        .register("main", &request.request_id, &request.target)
+        .unwrap();
+    tokio::select! {
+        biased;
+        _ = lease.resolve(std::future::pending()) => panic!("Operation should remain pending."),
+        _ = std::future::ready(()) => {},
+    }
+    drop(lease);
+    assert!(!runs.cancel("main", &request.request_id).unwrap());
+    drop(
+        runs.register("main", &request.request_id, &request.target)
+            .unwrap(),
+    );
+}
+
+fn mock_data() -> Value {
+    // Share wire-format samples with the frontend adapter to catch field and enum mismatches.
+    serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/mock-data/tutor-contracts.json"
+    )))
+    .unwrap()
+}
+
+#[test]
+fn frontend_requests_and_terminal_results_round_trip_without_losing_identity_or_snapshots() {
+    let samples = mock_data();
+    for (name, value) in samples["requests"].as_object().unwrap() {
+        let request: TutorRequest = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(request.validate(), Ok(()), "{name}");
+        assert_eq!(serde_json::to_value(request).unwrap(), *value, "{name}");
+    }
+    for value in samples["results"].as_array().unwrap() {
+        let result: TutorResult = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(serde_json::to_value(result).unwrap(), *value);
+    }
+}
+
+#[test]
+fn history_cannot_repeat_the_current_question_or_attach_quotes_to_another_project() {
+    let original = mock_data()["requests"]["quoted"].clone();
+    let mut duplicated = original.clone();
+    let question = duplicated["input"]["message"].clone();
+    duplicated["history"].as_array_mut().unwrap().push(question);
+    let request: TutorRequest = serde_json::from_value(duplicated).unwrap();
+    assert!(
+        request
+            .validate()
+            .unwrap_err()
+            .contains("distinct message IDs")
+    );
+
+    let mut wrong_project = original;
+    wrong_project["target"]["projectId"] = json!("another-project");
+    let request: TutorRequest = serde_json::from_value(wrong_project).unwrap();
+    assert!(
+        request
+            .validate()
+            .unwrap_err()
+            .contains("different project")
+    );
+}
+
+#[test]
+fn business_requests_reject_system_roles_credentials_and_unassigned_learning_starts() {
+    let samples = mock_data();
+    for key in ["apiKey", "systemPrompt", "messages"] {
+        let mut value = samples["requests"]["ordinary"].clone();
+        value[key] = json!("not a business field");
+        assert!(serde_json::from_value::<TutorRequest>(value).is_err());
+    }
+    let mut system = samples["requests"]["ordinary"].clone();
+    system["input"]["message"]["role"] = json!("system");
+    assert!(serde_json::from_value::<TutorRequest>(system).is_err());
+
+    let mut start = samples["requests"]["startLearning"].clone();
+    start["target"] = samples["requests"]["ordinary"]["target"].clone();
+    let request: TutorRequest = serde_json::from_value(start).unwrap();
+    assert_eq!(
+        request.validate(),
+        Err("Start learning requires a project.")
+    );
 }

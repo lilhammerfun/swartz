@@ -9,7 +9,7 @@ export interface TutorRun {
   cancel: () => Promise<void>;
 }
 
-/** Starts one execution; submitting an answer will later resume this same execution. */
+/** Starts a native Tutor operation; Rust returns its terminal outcome. */
 export function runTutor(session: ChatSession): TutorRun {
   if (!isTauri())
     throw new Error("Open the desktop app to chat with the Tutor.");

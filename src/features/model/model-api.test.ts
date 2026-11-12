@@ -16,6 +16,7 @@ test("model settings distinguish local endpoints and reject unsafe URLs", () => 
   );
   assert.equal(
     modelIsConfigured({
+      apiFormat: "openai_responses",
       baseUrl: "http://localhost:1234/v1",
       model: "local-model",
       hasApiKey: false,
@@ -24,6 +25,7 @@ test("model settings distinguish local endpoints and reject unsafe URLs", () => 
   );
   assert.equal(
     modelIsConfigured({
+      apiFormat: "openai_responses",
       baseUrl: "https://provider.example/v1",
       model: "remote-model",
       hasApiKey: false,
@@ -63,6 +65,7 @@ test("attachments reject unsupported, binary, oversized, and excessive files bef
 
 test("prompt options use real provider capabilities without suggesting unrelated models", () => {
   const settings = {
+    apiFormat: "openai_responses" as const,
     baseUrl: "https://api.deepseek.com",
     model: "deepseek-flash",
     hasApiKey: true,

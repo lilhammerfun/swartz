@@ -3297,6 +3297,7 @@ dependencies = [
  "hyper-util",
  "js-sys",
  "log",
+ "mime_guess",
  "percent-encoding",
  "pin-project-lite",
  "quinn",
@@ -3329,6 +3330,8 @@ dependencies = [
  "rig-cassette",
  "rig-core",
  "rig-harness-protocol",
+ "rig-reqwest",
+ "rig-typesafeai",
 ]
 
 [[package]]
@@ -3384,6 +3387,7 @@ dependencies = [
  "mime_guess",
  "ordered-float",
  "rig-http",
+ "rig-reqwest",
  "schemars 1.2.3",
  "serde",
  "serde_json",
@@ -3414,6 +3418,7 @@ dependencies = [
  "http",
  "mime",
  "thiserror 2.0.21",
+ "tokio",
  "url",
 ]
 
@@ -3430,6 +3435,34 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "rig-reqwest"
+version = "0.46.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a203e5c50e5460024594cc4ccf6cfc99c7ff22aee57cbacef0fb52ea0c7abd10"
+dependencies = [
+ "bytes",
+ "futures",
+ "http",
+ "reqwest",
+ "rig-http",
+ "thiserror 2.0.21",
+ "url",
+]
+
+[[package]]
+name = "rig-typesafeai"
+version = "0.46.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0fb9929b6e0911bf3df72c3e81749b4fb2baa3e7b87dd85802498f62deef6f6"
+dependencies = [
+ "http",
+ "rig-core",
+ "rig-reqwest",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

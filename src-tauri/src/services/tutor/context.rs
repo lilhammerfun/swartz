@@ -4,11 +4,14 @@ use rig::message::Message;
 use serde_json::json;
 
 use super::{
-    pedagogy::{EXECUTION_BOUNDARIES, PEDAGOGY},
-    types::{ConversationMessage, ConversationTarget, MessageRole, TutorInput, TutorRequest},
+    TutorInput, TutorRequest,
+    pedagogy::{EXECUTION_BOUNDARIES, PEDAGOGY, ROLE},
 };
 
-use crate::storage::projects::ProjectDetail;
+use crate::models::{
+    conversations::{ConversationMessage, ConversationTarget, MessageRole},
+    projects::ProjectDetail,
+};
 
 pub(super) struct PreparedInput {
     pub prompt: Message,
@@ -52,7 +55,8 @@ pub(super) fn prepare(
         TutorInput::StartLearning => json!({"event": "start_learning", "instruction": "The learner has explicitly started learning. Offer guidance using the supplied project context and prior exchanges."}).to_string(),
     };
     if content.len() + 2 > 64
-        || PEDAGOGY.len()
+        || ROLE.len()
+            + PEDAGOGY.len()
             + EXECUTION_BOUNDARIES.len()
             + prompt.len()
             + content.iter().map(|(_, text)| text.len()).sum::<usize>()

@@ -6,10 +6,8 @@ use std::{
 
 use serde_json::{Value, json};
 
-use super::{
-    ProjectStore,
-    data::{ExplorationStatus, ProjectDetail},
-};
+use super::ProjectStore;
+use crate::models::projects::{ExplorationStatus, ProjectDetail};
 
 const PROJECT_DATA: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -18,16 +16,11 @@ const PROJECT_DATA: &str = include_str!(concat!(
 static NEXT_DIRECTORY: AtomicU64 = AtomicU64::new(0);
 
 #[test]
-fn development_projects_use_the_same_native_read_contract() {
+fn project_test_data_uses_the_native_read_contract() {
     let library = TestLibrary::new();
-    let projects: Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../src/mock-data/projects.json"
-    )))
-    .unwrap();
-    library.write(&json!({"sections": [], "projects": projects}).to_string());
+    library.write(PROJECT_DATA);
     let projects = library.store().list().unwrap();
-    assert_eq!(projects.len(), 6);
+    assert_eq!(projects.len(), 1);
     for project in projects {
         let detail = library.store().get(&project.id).unwrap();
         assert_eq!(detail.project.id, project.id);
@@ -274,7 +267,7 @@ fn no_status_or_branch_aggregation_is_invented_by_the_read_api() {
 
 #[test]
 fn section_lifecycle_persists_and_does_not_modify_business_state() {
-    use super::data::LibraryChange::*;
+    use crate::models::projects::LibraryChange::*;
     let library = TestLibrary::new();
     library.write(PROJECT_DATA);
     let before =
@@ -330,7 +323,7 @@ fn section_lifecycle_persists_and_does_not_modify_business_state() {
 
 #[test]
 fn invalid_section_operations_leave_saved_bytes_unchanged() {
-    use super::data::LibraryChange::*;
+    use crate::models::projects::LibraryChange::*;
     let library = TestLibrary::new();
     library.write(PROJECT_DATA);
     let changes = vec![
@@ -379,7 +372,7 @@ fn concurrent_section_writes_do_not_lose_updates() {
             let path = library.path.clone();
             scope.spawn(move || {
                 ProjectStore::new(path)
-                    .update(super::data::LibraryChange::CreateSection {
+                    .update(crate::models::projects::LibraryChange::CreateSection {
                         id: format!("section-{n}"),
                         name: format!("Section {n}"),
                     })
@@ -404,14 +397,17 @@ fn dangling_section_references_and_duplicate_sections_are_rejected() {
 
 #[test]
 fn batch_move_validates_every_project_before_saving() {
-    use super::data::LibraryChange;
+    use crate::models::projects::LibraryChange;
     let library = TestLibrary::new();
-    let projects: Value = serde_json::from_str(include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../src/mock-data/projects.json"
-    )))
+    let mut data: Value = serde_json::from_str(PROJECT_DATA).unwrap();
+    let second: Value = serde_json::from_str(
+        &data["projects"][0]
+            .to_string()
+            .replace("project-backend-interview", "project-second"),
+    )
     .unwrap();
-    library.write(&json!({"sections": [], "projects": projects}).to_string());
+    data["projects"].as_array_mut().unwrap().push(second);
+    library.write(&data.to_string());
     let store = library.store();
     store
         .update(LibraryChange::CreateSection {
@@ -470,7 +466,7 @@ fn batch_move_validates_every_project_before_saving() {
             id: "systems".into(),
         })
         .unwrap();
-    assert_eq!(store.list().unwrap().len(), 6);
+    assert_eq!(store.list().unwrap().len(), 2);
     assert!(
         store
             .list()

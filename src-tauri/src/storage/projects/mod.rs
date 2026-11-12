@@ -1,12 +1,11 @@
 //! Project library persistence, validation, and atomic file replacement.
 //!
-//! This module owns the JSON document shape and exports the records returned to callers.
+//! The file schema belongs here; learning objects live in models::projects.
 
-mod data;
-
-pub(crate) use data::{LibraryChange, LibrarySnapshot, Project, ProjectDetail};
-
-use tauri::Manager;
+use crate::models::projects::{
+    LibraryChange, LibrarySection, LibrarySnapshot, PlanNode, Project, ProjectDetail,
+};
+use serde::{Deserialize, Serialize};
 
 use std::{
     collections::HashSet,
@@ -19,7 +18,13 @@ use std::{
     },
 };
 
-use self::data::{LibraryData, LibrarySection, PlanNode};
+/// Sections and project assignments share one file, so deleting a section cannot leave dangling references.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LibraryData {
+    pub sections: Vec<LibrarySection>,
+    pub projects: Vec<ProjectDetail>,
+}
 static LIBRARY_WRITE: Mutex<()> = Mutex::new(());
 static NEXT_WRITE: AtomicU64 = AtomicU64::new(0);
 
@@ -300,31 +305,6 @@ fn validate_library(data: &LibraryData) -> Result<(), String> {
         }
     }
     validate(&data.projects)
-}
-
-pub(crate) fn open(app: &tauri::AppHandle) -> Result<ProjectStore, String> {
-    // Development tests use an isolated file with the same Rust reads and validation; release builds ignore it.
-    #[cfg(debug_assertions)]
-    if let Some(path) = std::env::var_os("SWARTZ_PROJECTS_FILE") {
-        return Ok(ProjectStore::new(path.into()));
-    }
-    // Rust resolves project storage in the app data directory; the frontend cannot supply a file path.
-    let directory = app
-        .path()
-        .app_local_data_dir()
-        .map_err(|_| "Could not locate the project data directory.".to_string())?;
-    Ok(ProjectStore::new(directory.join("projects.json")))
-}
-
-/// Internal application access; Tutor tools do not call frontend IPC commands.
-pub(crate) async fn load_detail(
-    app: &tauri::AppHandle,
-    project_id: String,
-) -> Result<ProjectDetail, String> {
-    let store = open(app)?;
-    tauri::async_runtime::spawn_blocking(move || store.get(&project_id))
-        .await
-        .map_err(|_| "Could not finish reading the project details.".to_string())?
 }
 
 #[cfg(test)]
